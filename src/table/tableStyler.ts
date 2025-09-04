@@ -961,7 +961,7 @@ export class TableStyler<V> {
      */
     withCellStyle(rowIndex: number, columnIndex: number, cellStyle: Partial<CellStyle>, priority: number = 0): TableStyler<V> {
         if (rowIndex < 0 || rowIndex >= TableData.tableRowCount(this.dataFrame) ||
-            columnIndex < 0 || columnIndex >= TableData.tableRowCount(this.dataFrame)) {
+            columnIndex < 0 || columnIndex >= TableData.tableColumnCount(this.dataFrame)) {
             this.errors.push(
                 `The (row, column) indices, when setting a cell-style, must be in ` +
                 `([0, ${TableData.tableRowCount(this.dataFrame)}), [0, ${TableData.tableColumnCount(this.dataFrame)}))`

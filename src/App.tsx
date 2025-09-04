@@ -6,6 +6,7 @@ import {createTable} from "./table/tableSvg.ts";
 import {TableFormatter} from "./table/tableFormatter.ts";
 import {defaultTableFont} from "./table/tableUtils.ts";
 import {
+    defaultCellStyle,
     defaultColumnHeaderStyle,
     defaultColumnStyle,
     defaultRowHeaderStyle,
@@ -160,7 +161,10 @@ function App(props: Props) {
                             padding: {left: 10, right: 10},
                             alignText: 'right',
                         })
-                        .withRowStyle(1, {
+                        .withColumnStyle(4, {...defaultColumnStyle, alignText: 'left', padding: {left: 0, right: 0}}, 100)
+                        .withCellStyle(1, 4, {...defaultCellStyle, alignText: 'center', font: {...defaultTableFont, color: 'red', weight: 650}}, 200)
+                        .withCellStyle(2, 4, {...defaultCellStyle, font: {...defaultTableFont, color: 'purple', weight: 750, size: 16}}, 200)
+                        .withRowStyles([], {
                             ...defaultRowStyle,
                             font: {...defaultTableFont, color: 'green', weight: 750},
                         }, 1)
@@ -194,7 +198,6 @@ function App(props: Props) {
                     .attr('style', style + background + ` color: ${color}`)
             }
         },
-        // [tableId, containerRef.current]
         [color, backgroundColor, svgStyle, tableId, width, height]
     )
 
