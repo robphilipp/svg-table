@@ -136,7 +136,7 @@ function App(props: Props) {
                     .flatMap(tableData => TableFormatter.fromTableData(tableData)
                         // .addRowFormatter(1, value => formatTime(value as number, "ms"))
                         .addRowFormatter(1, value => `${value as number} ms`)
-                        .flatMap(tf => tf.addRowFormatter(2, value => `${value as number} kg`))
+                        // .flatMap(tf => tf.addRowFormatter(2, value => `${value as number} kg`))
                         .flatMap(tf => tf.formatTable())
                     )
                     .map(tableData => TableStyler.fromTableData(tableData)
@@ -163,7 +163,7 @@ function App(props: Props) {
                         })
                         .withColumnStyle(4, {...defaultColumnStyle, alignText: 'left', padding: {left: 0, right: 0}}, 100)
                         .withCellStyle(1, 4, {...defaultCellStyle, alignText: 'center', font: {...defaultTableFont, color: 'red', weight: 650}}, 200)
-                        .withCellStyle(2, 4, {...defaultCellStyle, font: {...defaultTableFont, color: 'purple', weight: 750, size: 16}}, 200)
+                        .withCellStyleWhen(value => Math.floor(parseFloat(value)) % 2 === 0, {...defaultCellStyle, alignText: 'right', font: {...defaultTableFont, color: 'purple', weight: 750, size: 16}}, 300)
                         .withRowStyles([], {
                             ...defaultRowStyle,
                             font: {...defaultTableFont, color: 'green', weight: 750},

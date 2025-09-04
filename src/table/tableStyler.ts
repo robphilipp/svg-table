@@ -979,6 +979,17 @@ export class TableStyler<V> {
             .getOrElse(this)
     }
 
+    withCellStyleWhen(predicate: (value: V, rowIndex: number, columnIndex: number) => boolean, cellStyle: Partial<CellStyle>, priority: number = 0): TableStyler<V> {
+        return this.dataFrame
+            .tagCellWhen(predicate, TableStyleType.CELL, stylingFor(cellStyle, defaultCellStyle, priority))
+            // when successfully tagged, make an updated copy of this builder with the new data-frame
+            .map(df => this.update({dataFrame: df}))
+            // when failed to tag, add to the errors
+            .onFailure(error => this.errors.push(error))
+            // when failed, return this (unmodified) builder
+            .getOrElse(this)
+    }
+
     /**
      * Finalizes the styling process and creates a StyledTable instance.
      * @returns A StyledTable instance with all the applied styles
