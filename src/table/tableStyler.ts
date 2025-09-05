@@ -140,7 +140,7 @@ export const defaultDimension: Dimension = {
     height: 15,
     defaultHeight: 20,
     minHeight: 10,
-    maxHeight: 30
+    maxHeight: 50
 }
 
 /**
@@ -173,16 +173,18 @@ export type RowStyle = {
 export const defaultRowStyle: RowStyle = {
     font: defaultTableFont,
     background: defaultTableBackground,
-    dimension: {defaultHeight: 20, minHeight: 20, maxHeight: 20},
+    dimension: {defaultHeight: 20, minHeight: 15, maxHeight: 50},
     padding: {top: 0, bottom: 0}
 }
 
 export type TextAlignment = "left" | "center" | "right"
 
+export type VerticalTextAlignment = "top" | "middle" | "bottom"
+
 export type CellStyle = {
     font: TableFont
-    // alignText: "left" | "center" | "right"
     alignText: TextAlignment
+    // verticalAlignText: VerticalTextAlignment
     background: Background
     dimension: Dimension
     padding: Padding
@@ -192,6 +194,7 @@ export type CellStyle = {
 export const defaultCellStyle: CellStyle = {
     font: defaultTableFont,
     alignText: "left",
+    // verticalAlignText: "bottom",
     background: defaultTableBackground,
     dimension: defaultDimension,
     padding: defaultTablePadding,

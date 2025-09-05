@@ -129,10 +129,10 @@ function App(props: Props) {
                         .withPadding({...defaultTablePadding, top: 20, left: 20})
                         .withColumnHeaderStyle({
                             ...defaultColumnHeaderStyle,
-                            padding: {top: 0, bottom: 10},
+                            padding: {top: 10, bottom: 0},
                             dimension: {...defaultColumnHeaderStyle.dimension, maxHeight: 70},
                             alignText: 'center',
-                            background: {color: 'grey', opacity: 0.25},
+                            // background: {color: 'grey', opacity: 0.25},
                             font: {...defaultTableFont, color: 'black', weight: 650, size: 14}
                         })
                         .withColumnStyles([], {
@@ -150,10 +150,18 @@ function App(props: Props) {
                             alignText: 'center',
                             font: {...defaultTableFont, color: 'red', weight: 650}
                         }, 210)
-                        .withCellStyleWhen(value => Math.floor(parseFloat(value)) % 2 === 0, {
+                        .withCellStyleWhen((value, rowIndex) => Math.floor(parseFloat(value)) % 2 === 0 && rowIndex === 1, {
                             ...defaultCellStyle,
                             alignText: 'right',
-                            font: {...defaultTableFont, color: 'purple', weight: 650, size: 13}
+                            font: {...defaultTableFont, color: 'purple', weight: 650, size: 13},
+                            background: {color: 'grey', opacity: 0.35},
+                            padding: {left: 10, right: 10, top: 30, bottom: 10}
+                        }, 200)
+                        .withCellStyleWhen((value, rowIndex) => Math.floor(parseFloat(value)) % 2 === 1 && rowIndex === 2, {
+                            ...defaultCellStyle,
+                            alignText: 'right',
+                            font: {...defaultTableFont, color: 'yellow', weight: 550, size: 13},
+                            background: {color: 'blue', opacity: 0.35}
                         }, 200)
                         .withRowStyles([], {
                             ...defaultRowStyle,
