@@ -50,7 +50,6 @@ function dominantBaselineFrom(align: VerticalTextAlignment): DominantBaseline {
     }
 }
 
-
 export type CellRenderingDimensions = {
     // the dimensions of the cell to be used when rendering
     width: number
@@ -701,11 +700,16 @@ function textXOffset(element: ElementPlacementInfo, cellWidth: number): number {
 }
 
 function textYOffset(element: ElementPlacementInfo, cellHeight: number): number {
-    // switch (element.cellStyle.alignText) {
-    //     case "top":
-    //         return element.cellStyle.padding.top
-    // }
-    return cellHeight - element.cellStyle.padding.bottom
+    switch (element.cellStyle.verticalAlignText) {
+        case "top":
+            return element.cellStyle.padding.top
+
+        case "middle":
+            return cellHeight / 2
+
+        case "bottom":
+            return cellHeight - element.cellStyle.padding.bottom
+    }
 }
 
 /**
@@ -723,8 +727,7 @@ function placeTextInTable(tableRenderingInfo: TableRenderingInfo): TableRenderin
                 .attr('transform', `translate(${info.cellX}, ${info.cellY})`)
             info.textSelection
                 .attr('text-anchor', textAnchorFrom(info.cellStyle.alignText))
-                // todo expose style parameter
-                .attr('dominant-baseline', 'auto')
+                .attr('dominant-baseline', dominantBaselineFrom(info.cellStyle.verticalAlignText))
                 .attr('transform', `translate(${info.x}, ${info.y})`)
             return info
         })

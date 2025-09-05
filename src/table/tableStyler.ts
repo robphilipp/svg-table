@@ -147,13 +147,15 @@ export const defaultDimension: Dimension = {
  * The style for each column (for what is not determined by each row's style).
  */
 export type ColumnStyle = {
-    alignText: "left" | "center" | "right"
+    alignText: TextAlignment
+    verticalAlignText: VerticalTextAlignment
     dimension: Pick<Dimension, "defaultWidth" | "minWidth" | "maxWidth">
     padding: Pick<Padding, "left" | "right">
 }
 
 export const defaultColumnStyle: ColumnStyle = {
     alignText: "left",
+    verticalAlignText: "middle",
     dimension: {defaultWidth: 60, minWidth: 40, maxWidth: 80},
     padding: {left: 0, right: 0}
 }
@@ -184,7 +186,7 @@ export type VerticalTextAlignment = "top" | "middle" | "bottom"
 export type CellStyle = {
     font: TableFont
     alignText: TextAlignment
-    // verticalAlignText: VerticalTextAlignment
+    verticalAlignText: VerticalTextAlignment
     background: Background
     dimension: Dimension
     padding: Padding
@@ -194,7 +196,7 @@ export type CellStyle = {
 export const defaultCellStyle: CellStyle = {
     font: defaultTableFont,
     alignText: "left",
-    // verticalAlignText: "bottom",
+    verticalAlignText: "middle",
     background: defaultTableBackground,
     dimension: defaultDimension,
     padding: defaultTablePadding,
@@ -208,7 +210,8 @@ export const defaultCellStyle: CellStyle = {
  */
 export type ColumnHeaderStyle = {
     font: TableFont
-    alignText: "left" | "right" | "center"
+    alignText: TextAlignment
+    verticalAlignText: VerticalTextAlignment
     dimension: Pick<Dimension, "height" | "maxHeight" | "minHeight">
     padding: Pick<Padding, "top" | "bottom">
     background: Background
@@ -217,6 +220,7 @@ export type ColumnHeaderStyle = {
 export const defaultColumnHeaderStyle: ColumnHeaderStyle = {
     font: {...defaultTableFont, weight: 600},
     alignText: "left",
+    verticalAlignText: "middle",
     dimension: {height: 20, maxHeight: 20, minHeight: 20},
     padding: {top: 0, bottom: 0},
     background: defaultTableBackground
@@ -229,7 +233,8 @@ export const defaultColumnHeaderStyle: ColumnHeaderStyle = {
  */
 export type RowHeaderStyle = {
     font: TableFont
-    alignText: "left" | "right" | "center"
+    alignText: TextAlignment
+    verticalAlignText: VerticalTextAlignment
     padding: Pick<Padding, "left" | "right">
     background: Background
 }
@@ -237,6 +242,7 @@ export type RowHeaderStyle = {
 export const defaultRowHeaderStyle: RowHeaderStyle = {
     font: defaultTableFont,
     alignText: "left",
+    verticalAlignText: "middle",
     padding: {left: 0, right: 0},
     background: defaultTableBackground
 }
@@ -248,7 +254,8 @@ export const defaultRowHeaderStyle: RowHeaderStyle = {
  */
 export type FooterStyle = {
     font: TableFont
-    alignText: "left" | "right" | "center"
+    alignText: TextAlignment
+    verticalAlignText: VerticalTextAlignment
     dimension: Pick<Dimension, "height">
     padding: Pick<Padding, "top" | "bottom">
     background: Background
@@ -257,6 +264,7 @@ export type FooterStyle = {
 export const defaultFooterStyle: FooterStyle = {
     font: defaultTableFont,
     alignText: "left",
+    verticalAlignText: "middle",
     dimension: {height: 20},
     padding: {top: 0, bottom: 0},
     background: defaultTableBackground
@@ -594,7 +602,9 @@ export class StyledTable<V> {
                 // @ts-ignore
                 font: (curr.style.hasOwnProperty('font') ? {...style.font, ...curr.style.font} as TableFont : (style.hasOwnProperty('font') ? {...style.font} : defaultTableFont)),
                 // @ts-ignore
-                alignText: (curr.style.hasOwnProperty('alignText') ? curr.style.alignText as "left" | "center" | "right" : (style.hasOwnProperty('alignText') ? style.alignText : defaultColumnStyle.alignText)),
+                alignText: (curr.style.hasOwnProperty('alignText') ? curr.style.alignText as TextAlignment : (style.hasOwnProperty('alignText') ? style.alignText : defaultColumnStyle.alignText)),
+                // @ts-ignore
+                verticalAlignText: (curr.style.hasOwnProperty('verticalTextAlign') ? curr.style.verticalTextAlign as VerticalTextAlignment : (style.hasOwnProperty('verticalTextAlign') ? style.verticalAlignText : defaultColumnStyle.verticalAlignText)),
                 // @ts-ignore
                 background: (curr.style.hasOwnProperty('background') ? {...style.background, ...curr.style.background} as Background : (style.hasOwnProperty('background') ? style.background : defaultTableBackground)),
                 // @ts-ignore
@@ -603,18 +613,6 @@ export class StyledTable<V> {
                 padding: (curr.style.hasOwnProperty('padding') ? {...style.padding, ...curr.style.padding} as Padding : (style.hasOwnProperty('padding') ? {...style.padding} : defaultTablePadding)),
                 // @ts-ignore
                 border: (curr.style.hasOwnProperty('border') ? {...style.border, ...curr.style.border} as Border : (style.hasOwnProperty('border') ? {...style.border} : defaultTableBorder)),
-                // // @ts-ignore
-                // font: (curr.style.hasOwnProperty('font') ? {...defaultTableFont, ...curr.style.font} as TableFont : (style.hasOwnProperty('font') ? {...style.font} : defaultTableFont)),
-                // // @ts-ignore
-                // alignText: (curr.style.hasOwnProperty('alignText') ? curr.style.alignText as "left" | "center" | "right" : (style.hasOwnProperty('alignText') ? style.alignText : defaultColumnStyle.alignText)),
-                // // @ts-ignore
-                // background: (curr.style.hasOwnProperty('background') ? {...defaultTableBackground, ...curr.style.background} as Background : (style.hasOwnProperty('background') ? style.background : defaultTableBackground)),
-                // // @ts-ignore
-                // dimension: (curr.style.hasOwnProperty('dimension') ? {...defaultDimension, ...curr.style.dimension} as Dimension : (style.hasOwnProperty('dimension') ? {...style.dimension} : defaultDimension)),
-                // // @ts-ignore
-                // padding: (curr.style.hasOwnProperty('padding') ? {...defaultTablePadding, ...curr.style.padding} as Padding : (style.hasOwnProperty('padding') ? {...style.padding} : defaultTablePadding)),
-                // // @ts-ignore
-                // border: (curr.style.hasOwnProperty('border') ? {...defaultTableBorder, ...curr.style.border} as Border : (style.hasOwnProperty('border') ? {...style.border} : defaultTableBorder)),
             }), defaultCellStyle)
 
         return successResult(cellStyle)

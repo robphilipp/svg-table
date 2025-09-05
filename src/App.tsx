@@ -153,6 +153,8 @@ function App(props: Props) {
                         .withCellStyleWhen((value, rowIndex) => Math.floor(parseFloat(value)) % 2 === 0 && rowIndex === 1, {
                             ...defaultCellStyle,
                             alignText: 'right',
+                            // todo figure out why verticalAlignText doesn't flow through and overwrite the default value
+                            verticalAlignText: 'bottom',
                             font: {...defaultTableFont, color: 'purple', weight: 650, size: 13},
                             background: {color: 'grey', opacity: 0.35},
                             padding: {left: 10, right: 10, top: 30, bottom: 10}
