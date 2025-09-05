@@ -1,7 +1,6 @@
 import {select, type Selection} from 'd3';
 import {type TextSelection} from "./d3types";
 import {textHeightOf, textWidthOf} from "./tableUtils";
-import {type ColumnWidthInfo, type RowHeightInfo} from "./tableUtils";
 import {TableData} from "./tableData";
 import {type Result} from "result-fn";
 import {
@@ -37,20 +36,6 @@ function textAnchorFrom(align: TextAlignment): TextAnchor {
     }
 }
 
-export type TableDimensions = {
-    width: number
-    height: number
-    rows: RowHeightInfo
-    columns: ColumnWidthInfo
-}
-
-/**
- * Information about the table data
- */
-export type TableDataPlacementInfo = {
-    readonly tableData: TableData<ElementPlacementInfo>
-}
-
 export type CellRenderingDimensions = {
     // the dimensions of the cell to be used when rendering
     width: number
@@ -65,6 +50,7 @@ export type TableRenderingInfo = {
     tableHeight: number
     tableX: number
     tableY: number
+    // selection: GSelection
     renderingInfo: TableData<ElementPlacementInfo & CellRenderingDimensions>
 }
 
@@ -136,52 +122,6 @@ export function createTable<V>(
             return info
         })
         .map(renderingInfo => placeTextInTable(renderingInfo))
-    // // creates an SVG group to hold the column header (if there is one), and
-    // // then add a cell for each column header element
-    // const columnHeaders = createColumnHeaderPlacementInfo(tableData, tableSelection, uniqueTableId, styledTable)
-    // const rowHeaders = createRowHeaderPlacementInfo(tableData, tableSelection, uniqueTableId, styledTable)
-    // const footers = createFooterPlacementInfo(tableData, tableSelection, uniqueTableId, styledTable)
-    // const data = createDataPlacementInfo(tableData, tableSelection, uniqueTableId, styledTable)
-    //
-    // // when the table has row-headers, we need to adjust the column-headers
-    // if (tableData.hasRowHeader()) {
-    //     columnHeaders.shift()
-    // }
-    //
-    // // when the table has row-headers, we need to remove the first element from the footers (this value
-    // // will be used as the default value when adding the footer.)
-    // const emptyRowHeader = tableData.hasRowHeader() ? footers.shift() : undefined
-    //
-    // // when the table has a column header, then we need to remove the first element from the row-headers,
-    // // and when the table has a footer, then we need to remove the last element from the row-headers,
-    // // these values will be used as the default values when adding the row-header.
-    // const emptyColHeader = tableData.hasColumnHeader() ? rowHeaders.shift() : undefined
-    // const emptyFooter = tableData.hasFooter() ? rowHeaders.pop() : undefined
-    //
-    // const {top, left} = styledTable.tablePadding()
-    //
-    // return TableData
-    //     .fromDataFrame<ElementPlacementInfo>(data)
-    //     // the column header doesn't need to deal with the value providers, because it is
-    //     // the first one added and so there are no row-headers or footers yet.
-    //     .withColumnHeader(columnHeaders)
-    //     .flatMap(td => td.withRowHeader(
-    //         rowHeaders,
-    //         defaultFormatting<ElementPlacementInfo>(),
-    //         () => emptyColHeader,
-    //         () => emptyFooter
-    //     ))
-    //     .flatMap(td => td.withFooter(
-    //         footers,
-    //         defaultFormatting<ElementPlacementInfo>(),
-    //         () => emptyRowHeader
-    //     ))
-    //     .map(td => {
-    //         const info = calculateRenderingInfo(td, styledTable, coordinates)
-    //         tableSelection.attr('transform', `translate(${info.tableX + left}, ${info.tableY + top})`)
-    //         return info
-    //     })
-    //     .map(renderingInfo => placeTextInTable(renderingInfo))
 }
 
 /*
@@ -236,10 +176,6 @@ function createColumnHeaderPlacementInfo<V>(
                 .append('g')
                 .attr('id', columnHeaderGroupId(uniqueTableId))
                 .attr('class', 'tooltip-table-header')
-            // .style('fill', styledTable.columnHeaderStyle()
-            //     .map(styling => styling.style.background.color)
-            //     .getOrElse(defaultColumnHeaderStyle.background.color)
-            // )
 
             return columnHeader.map((header, columnIndex) => {
                 // the style with the highest priority for the cell
@@ -437,8 +373,6 @@ function calculateRenderingInfo<V>(
     type WithWidthHeight = ElementPlacementInfo & { cellWidth: number, cellHeight: number }
 
     type MinMax = { min: number, max: number, minValues: Array<number>, maxValues: Array<number> }
-
-    // const [x, y] = coordinates
 
     /**
      * Calculates the min and max values for the extracted value from the cell

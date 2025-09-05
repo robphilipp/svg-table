@@ -87,13 +87,6 @@ function App(props: Props) {
     useEffect(
         () => {
             if (containerRef.current) {
-                // const [width, height] = dimensions
-
-                // // create the main SVG element if it doesn't already exist
-                // if (!mainGRef.current) {
-                //     mainGRef.current = createPlotContainer(tableId, containerRef.current, plotDimRef.current, color)
-                // }
-
                 // build up the svg style from the defaults and any svg style object
                 // passed in as properties
                 const style = Object.getOwnPropertyNames(svgStyle)
@@ -107,20 +100,6 @@ function App(props: Props) {
                     `background-color: ${backgroundColor}; ` :
                     ''
 
-                // // update the dimension and style
-                // d3.select<SVGSVGElement, any>(containerRef.current)
-                //     .attr('width', svgWidth)
-                //     .attr('height', svgHeight)
-                //     .attr('style', style + background + ` color: ${color}`)
-                // }
-                //     },
-                //     [color, backgroundColor, svgStyle, tableId, svgWidth, svgHeight, width, height]
-                // )
-                //
-                // useEffect(() => {
-                //         if (!containerRef.current) {
-                //             return //{tableX: 0, tableY: 0, tableWidth: 0, tableHeight: 0}
-                //         }
                 const renderingInfo = DataFrame
                     .from<number | string>([
                         [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
@@ -136,7 +115,7 @@ function App(props: Props) {
                     .flatMap(tableData => TableFormatter.fromTableData(tableData)
                         // .addRowFormatter(1, value => formatTime(value as number, "ms"))
                         .addRowFormatter(1, value => `${value as number} ms`)
-                        // .flatMap(tf => tf.addRowFormatter(2, value => `${value as number} kg`))
+                        .flatMap(tf => tf.addRowFormatter(2, value => `${value as number} kg`))
                         .flatMap(tf => tf.formatTable())
                     )
                     .map(tableData => TableStyler.fromTableData(tableData)
@@ -161,12 +140,24 @@ function App(props: Props) {
                             padding: {left: 10, right: 10},
                             alignText: 'right',
                         })
-                        .withColumnStyle(4, {...defaultColumnStyle, alignText: 'left', padding: {left: 0, right: 0}}, 100)
-                        .withCellStyle(1, 4, {...defaultCellStyle, alignText: 'center', font: {...defaultTableFont, color: 'red', weight: 650}}, 200)
-                        .withCellStyleWhen(value => Math.floor(parseFloat(value)) % 2 === 0, {...defaultCellStyle, alignText: 'right', font: {...defaultTableFont, color: 'purple', weight: 750, size: 16}}, 300)
+                        .withColumnStyle(4, {
+                            ...defaultColumnStyle,
+                            alignText: 'left',
+                            padding: {left: 0, right: 0}
+                        }, 100)
+                        .withCellStyle(1, 4, {
+                            ...defaultCellStyle,
+                            alignText: 'center',
+                            font: {...defaultTableFont, color: 'red', weight: 650}
+                        }, 210)
+                        .withCellStyleWhen(value => Math.floor(parseFloat(value)) % 2 === 0, {
+                            ...defaultCellStyle,
+                            alignText: 'right',
+                            font: {...defaultTableFont, color: 'purple', weight: 650, size: 13}
+                        }, 200)
                         .withRowStyles([], {
                             ...defaultRowStyle,
-                            font: {...defaultTableFont, color: 'green', weight: 750},
+                            font: {...defaultTableFont, color: 'green', weight: 550},
                         }, 1)
                         .withRowHeaderStyle({
                             ...defaultRowHeaderStyle,
@@ -175,9 +166,12 @@ function App(props: Props) {
                         })
                         .styleTable()
                     )
-                    .flatMap(styledTable =>
-                        createTable(styledTable, containerRef.current!, `t-header-${tableId}`, [10, 10])
-                    )
+                    .flatMap(styledTable => createTable(
+                        styledTable,
+                        containerRef.current as SVGSVGElement,
+                        `t-header-${tableId}`,
+                        [10, 10]
+                    ))
                     .map(renderingInfo => {
                         const {
                             tableX: x,
@@ -188,10 +182,8 @@ function App(props: Props) {
                         return {x, y, contentWidth, contentHeight}
                     })
                     .getOrThrow()
-                // setSvgWidth(renderingInfo.contentWidth)
-                // setSvgHeight(renderingInfo.contentHeight)
 
-                // update the dimension and style
+                // update the dimension and style of the base SVG container
                 d3.select<SVGSVGElement, any>(containerRef.current)
                     .attr('width', renderingInfo.contentWidth + margin.left + margin.right)
                     .attr('height', renderingInfo.contentHeight + margin.top + margin.bottom)
