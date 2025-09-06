@@ -132,8 +132,17 @@ function App(props: Props) {
                             padding: {top: 10, bottom: 0},
                             dimension: {...defaultColumnHeaderStyle.dimension, maxHeight: 70},
                             alignText: 'center',
-                            // background: {color: 'grey', opacity: 0.25},
+                            // verticalAlignText: 'bottom',
+                            background: {color: 'grey', opacity: 0.25},
                             font: {...defaultTableFont, color: 'black', weight: 650, size: 14}
+                        })
+                        .withRowHeaderStyle({
+                            ...defaultRowHeaderStyle,
+                            alignText: 'center',
+                            verticalAlignText: 'middle',
+                            font: {...defaultTableFont, color: 'grey', weight: 650, size: 14},
+                            background: {color: 'blue', opacity: 0.25},
+                            // padding: {left: 10, right: 10}
                         })
                         .withColumnStyles([], {
                             ...defaultColumnStyle,
@@ -153,7 +162,6 @@ function App(props: Props) {
                         .withCellStyleWhen((value, rowIndex) => Math.floor(parseFloat(value)) % 2 === 0 && rowIndex === 1, {
                             ...defaultCellStyle,
                             alignText: 'right',
-                            // todo figure out why verticalAlignText doesn't flow through and overwrite the default value
                             verticalAlignText: 'bottom',
                             font: {...defaultTableFont, color: 'purple', weight: 650, size: 13},
                             background: {color: 'grey', opacity: 0.35},
@@ -169,11 +177,6 @@ function App(props: Props) {
                             ...defaultRowStyle,
                             font: {...defaultTableFont, color: 'green', weight: 550},
                         }, 1)
-                        .withRowHeaderStyle({
-                            ...defaultRowHeaderStyle,
-                            alignText: 'right',
-                            font: {...defaultTableFont, color: 'grey', weight: 650, size: 14}
-                        })
                         .styleTable()
                     )
                     .flatMap(styledTable => createTable(

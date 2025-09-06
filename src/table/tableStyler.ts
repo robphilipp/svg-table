@@ -1,11 +1,10 @@
 import {TableData} from "./tableData";
-// import {defaultTableFont} from "./tableUtils";
 import {CellCoordinate, ColumnCoordinate, DataFrame, RowCoordinate, type Tag, type TagValue} from "data-frame-ts";
 import {failureResult, type Result, successResult} from "result-fn";
 
 /**
  * Represents a styling configuration with a priority level.
- * Higher priority styles will override lower priority styles when multiple are applied.
+ * Higher priority styles will override lower priority styles when multiple styles are applied.
  */
 export type Styling<S> = {
     style: S
@@ -599,20 +598,49 @@ export class StyledTable<V> {
         const cellStyle = availableStyling
             .sort((stylingA: Stylings, stylingB: Stylings) => stylingA.priority - stylingB.priority)
             .reduce((style: CellStyle, curr: Stylings) => ({
-                // @ts-ignore
-                font: (curr.style.hasOwnProperty('font') ? {...style.font, ...curr.style.font} as TableFont : (style.hasOwnProperty('font') ? {...style.font} : defaultTableFont)),
-                // @ts-ignore
-                alignText: (curr.style.hasOwnProperty('alignText') ? curr.style.alignText as TextAlignment : (style.hasOwnProperty('alignText') ? style.alignText : defaultColumnStyle.alignText)),
-                // @ts-ignore
-                verticalAlignText: (curr.style.hasOwnProperty('verticalTextAlign') ? curr.style.verticalTextAlign as VerticalTextAlignment : (style.hasOwnProperty('verticalTextAlign') ? style.verticalAlignText : defaultColumnStyle.verticalAlignText)),
-                // @ts-ignore
-                background: (curr.style.hasOwnProperty('background') ? {...style.background, ...curr.style.background} as Background : (style.hasOwnProperty('background') ? style.background : defaultTableBackground)),
-                // @ts-ignore
-                dimension: (curr.style.hasOwnProperty('dimension') ? {...style.dimension, ...curr.style.dimension} as Dimension : (style.hasOwnProperty('dimension') ? {...style.dimension} : defaultDimension)),
-                // @ts-ignore
-                padding: (curr.style.hasOwnProperty('padding') ? {...style.padding, ...curr.style.padding} as Padding : (style.hasOwnProperty('padding') ? {...style.padding} : defaultTablePadding)),
-                // @ts-ignore
-                border: (curr.style.hasOwnProperty('border') ? {...style.border, ...curr.style.border} as Border : (style.hasOwnProperty('border') ? {...style.border} : defaultTableBorder)),
+                font:
+                    (curr.style.hasOwnProperty('font') ?
+                            // @ts-ignore
+                            {...style.font, ...curr.style.font} as TableFont : (
+                                style.hasOwnProperty('font') ? {...style.font} : defaultTableFont)
+                    ),
+                alignText:
+                    (curr.style.hasOwnProperty('alignText') ?
+                            // @ts-ignore
+                            curr.style.alignText as TextAlignment : (
+                                style.hasOwnProperty('alignText') ? style.alignText : defaultColumnStyle.alignText)
+                    ),
+                verticalAlignText:
+                    (curr.style.hasOwnProperty('verticalAlignText') ?
+                            // @ts-ignore
+                            curr.style.verticalAlignText as VerticalTextAlignment : (
+                                style.hasOwnProperty('verticalAlignText') ? style.verticalAlignText : defaultColumnStyle.verticalAlignText
+                            )
+                    ),
+                background:
+                    (curr.style.hasOwnProperty('background') ?
+                            // @ts-ignore
+                            {...style.background, ...curr.style.background} as Background : (
+                                style.hasOwnProperty('background') ? style.background : defaultTableBackground)
+                    ),
+                dimension:
+                    (curr.style.hasOwnProperty('dimension') ?
+                            // @ts-ignore
+                            {...style.dimension, ...curr.style.dimension} as Dimension : (
+                                style.hasOwnProperty('dimension') ? {...style.dimension} : defaultDimension)
+                    ),
+                padding:
+                    (curr.style.hasOwnProperty('padding') ?
+                            // @ts-ignore
+                            {...style.padding, ...curr.style.padding} as Padding : (
+                                style.hasOwnProperty('padding') ? {...style.padding} : defaultTablePadding)
+                    ),
+                border:
+                    (curr.style.hasOwnProperty('border') ?
+                            // @ts-ignore
+                            {...style.border, ...curr.style.border} as Border : (
+                                style.hasOwnProperty('border') ? {...style.border} : defaultTableBorder)
+                    ),
             }), defaultCellStyle)
 
         return successResult(cellStyle)
@@ -713,7 +741,6 @@ export class TableStyler<V> {
     withTableFont(font: Partial<TableFont>): TableStyler<V> {
         const builder = this.copy()
         builder.font = {...defaultTableFont, ...font}
-        // builder.font = {...builder.font, ...font}
         return builder
     }
 
@@ -980,7 +1007,11 @@ export class TableStyler<V> {
             .getOrElse(this)
     }
 
-    withCellStyleWhen(predicate: (value: V, rowIndex: number, columnIndex: number) => boolean, cellStyle: Partial<CellStyle>, priority: number = 0): TableStyler<V> {
+    withCellStyleWhen(
+        predicate: (value: V, rowIndex: number, columnIndex: number) => boolean,
+        cellStyle: Partial<CellStyle>,
+        priority: number = 0
+    ): TableStyler<V> {
         return this.dataFrame
             .tagCellWhen(predicate, TableStyleType.CELL, stylingFor(cellStyle, defaultCellStyle, priority))
             // when successfully tagged, make an updated copy of this builder with the new data-frame

@@ -632,7 +632,7 @@ function calculateRenderingInfo<V>(
                 width: cellWidth,
                 height: cellHeight,
                 x: cumColumnWidths[columnIndex] + textXOffset(element, cellWidth),
-                y: cumRowHeights[rowIndex] + textYOffset(element, cellHeight), // + element.cellStyle.padding.top,
+                y: cumRowHeights[rowIndex] + textYOffset(element, cellHeight),
                 cellX: cumColumnWidths[columnIndex],
                 cellY: cumRowHeights[rowIndex]
             }
@@ -696,6 +696,9 @@ function textXOffset(element: ElementPlacementInfo, cellWidth: number): number {
 
         case "right":
             return cellWidth - element.cellStyle.padding.right
+
+        default:
+            return cellWidth / 2
     }
 }
 
@@ -709,6 +712,9 @@ function textYOffset(element: ElementPlacementInfo, cellHeight: number): number 
 
         case "bottom":
             return cellHeight - element.cellStyle.padding.bottom
+
+        default:
+            return cellHeight / 2
     }
 }
 
@@ -722,8 +728,8 @@ function placeTextInTable(tableRenderingInfo: TableRenderingInfo): TableRenderin
     const updatedDf = tableRenderingInfo.renderingInfo.unwrapDataFrame()
         .mapElements(info => {
             info.cellSelection
-                .attr('width', info.width)// + info.cellStyle.padding.left + info.cellStyle.padding.right)
-                .attr('height', info.height)// + info.cellStyle.padding.top + info.cellStyle.padding.bottom)
+                .attr('width', info.width)
+                .attr('height', info.height)
                 .attr('transform', `translate(${info.cellX}, ${info.cellY})`)
             info.textSelection
                 .attr('text-anchor', textAnchorFrom(info.cellStyle.alignText))
