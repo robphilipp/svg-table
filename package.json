@@ -1,7 +1,12 @@
 {
   "name": "svg-table",
-  "private": true,
-  "version": "0.0.0",
+  "version": "0.0.1-snapshot",
+  "author": "Rob Philipp",
+  "homepage": "https://github.com/robphilipp/svg-table",
+  "license": "MIT",
+  "repository": "git@github.com:robphilipp/svg-table.git",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -29,6 +34,8 @@
     "globals": "^16.3.0",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.39.1",
-    "vite": "^7.1.2"
+    "vite": "^7.1.2",
+    "jest": "^30.1.3",
+    "ts-jest": "^29.4.1"
   }
 }
