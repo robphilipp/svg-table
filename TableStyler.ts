@@ -493,6 +493,14 @@ export class TableStyler<V> {
         )
     }
 
+    /**
+     * Applies the specified font settings for the table and returns a new {@link TableStyler}
+     * instance with the updated font configuration.
+     *
+     * @param font - The font configuration to be applied. This object can include partial
+     * properties of the TableFont.
+     * @return A new {@link TableStyler} instance with the updated font settings.
+     */
     withTableFont(font: Partial<TableFont>): TableStyler<V> {
         const builder = this.copy()
         builder.font = {...defaultTableFont, ...font}
@@ -670,8 +678,25 @@ export class TableStyler<V> {
             .getOrElse(this)
     }
 
-    withRowStyles(rowIndexes: Array<number>, rowStyle: Partial<RowStyle>, priority: number = 0): TableStyler<V> {
-        const indexes = rowIndexes.length > 0 ? rowIndexes : new Array(this.dataFrame.rowCount()).fill(0).map((_, i) => i)
+    /**
+     * Applies specific styles to rows in a table based on the provided row indexes.
+     *
+     * @param rowIndexes - An array of row indexes to which the styles will be applied. If the
+     * array is empty, all rows will be styled.
+     * @param rowStyle - An object representing the styles to apply to the specified rows.
+     * @param [priority=0] - An optional priority value for the styles. Higher priority values
+     * override lower ones.
+     * @return A new TableStyler instance with the specified row styles applied.
+     * @see withRowStyle
+     */
+    withRowStyles(
+        rowIndexes: Array<number>,
+        rowStyle: Partial<RowStyle>,
+        priority: number = 0
+    ): TableStyler<V> {
+        const indexes = rowIndexes.length > 0 ?
+            rowIndexes :
+            new Array(this.dataFrame.rowCount()).fill(0).map((_, i) => i)
         return TableStyler.withRowStyles(this, indexes, rowStyle, priority)
     }
 
@@ -712,8 +737,24 @@ export class TableStyler<V> {
             .getOrElse(this)
     }
 
-    withColumnStyles(columnIndexes: Array<number>, columnStyle: Partial<ColumnStyle>, priority: number = 0): TableStyler<V> {
-        const indexes = columnIndexes.length > 0 ? columnIndexes : new Array(this.dataFrame.columnCount()).fill(0).map((_, i) => i)
+    /**
+     * Applies specified styles to the columns of a table.
+     *
+     * @param columnIndexes - Array of column indexes to which the style should be applied. If the array
+     * is empty, styles will be applied to all columns.
+     * @param columnStyle - Partial column style configuration object defining the styles to be applied.
+     * @param [priority=0] - Optional priority value to determine the precedence of this style over others.
+     * @return Returns an instance of TableStyler with the updated column styles applied.
+     * @see withColumnStyle
+     */
+    withColumnStyles(
+        columnIndexes: Array<number>,
+        columnStyle: Partial<ColumnStyle>,
+        priority: number = 0
+    ): TableStyler<V> {
+        const indexes = columnIndexes.length > 0 ?
+            columnIndexes :
+            new Array(this.dataFrame.columnCount()).fill(0).map((_, i) => i)
         return TableStyler.withColumnStyles(this, indexes, columnStyle, priority)
     }
 
@@ -762,6 +803,16 @@ export class TableStyler<V> {
             .getOrElse(this)
     }
 
+    /**
+     * Sets the style for a specific cell based on a predicate.
+     * @param predicate A function that accepts the value, row-index, and column-index of the cell, and
+     * returns `true` if the cell should be styled, or `false` otherwise.
+     * @param cellStyle The style to apply to the cell if the predicate is `true`.
+     * @param priority The style's priority. Higher priority values override lower ones.
+     * @returns A new TableStyler instance with the cell style applied.
+     * @see withCellStyle
+     * @see withCellStyles
+     */
     withCellStyleWhen(
         predicate: (value: V, rowIndex: number, columnIndex: number) => boolean,
         cellStyle: Partial<CellStyle>,

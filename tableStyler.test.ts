@@ -11,7 +11,7 @@ import {
     defaultColumnStyle,
     defaultDimension,
     defaultFooterStyle,
-    defaultRowHeaderStyle,
+    defaultRowHeaderStyle, defaultRowStyle,
     defaultTableFont,
     defaultTableMargin,
     defaultTablePadding,
@@ -32,9 +32,10 @@ describe('styling data tables', () => {
         [dateTimeFor(2, 2), 23456, 'gnm-g234', 23.45, 5],
         [dateTimeFor(3, 3), 34567, 'gnm-h234', 3.65, 40],
         [dateTimeFor(4, 4), 45678, 'gnm-i234', 314.15, 9],
+        [dateTimeFor(5, 5), 56789, 'gnm-j234', 618.3, 10],
     ]).getOrThrow()
     const columnHeader = ['Date-Time', 'Customer ID', 'Product ID', 'Purchase Price', 'Amount']
-    const rowHeader = [1, 2, 3, 4]
+    const rowHeader = [1, 2, 3, 4, 5]
     const footer = ['A', 'B', 'C', 'D', 'E']
 
     describe('adding basic table styles', () => {
@@ -183,26 +184,26 @@ describe('styling data tables', () => {
             test('should return a failure when getting a style for a column index that is too large', () => {
                 const result = styledTable.stylesForTableCoordinates(1, 6)
                 expect(result.failed).toBeTruthy()
-                expect(result.error).toEqual("(StyledTable::stylesFor) Invalid row and/or column index; row_index: 1; column_index: 6; valid_row_index: [0, 6); valid_column_index: [0, 6)")
+                expect(result.error).toEqual("(StyledTable::stylesFor) Invalid row and/or column index; row_index: 1; column_index: 6; valid_row_index: [0, 7); valid_column_index: [0, 6)")
             })
 
             test('should return a failure when getting a style for a column index that is less than 0', () => {
                 const result = styledTable.stylesForTableCoordinates(3, -1)
                 expect(result.failed).toBeTruthy()
-                expect(result.error).toEqual("(StyledTable::stylesFor) Invalid row and/or column index; row_index: 3; column_index: -1; valid_row_index: [0, 6); valid_column_index: [0, 6)")
+                expect(result.error).toEqual("(StyledTable::stylesFor) Invalid row and/or column index; row_index: 3; column_index: -1; valid_row_index: [0, 7); valid_column_index: [0, 6)")
 
             })
 
             test('should return a failure when getting a style for a row index that is less than 0', () => {
                 const result = styledTable.stylesForTableCoordinates(-1, 3)
                 expect(result.failed).toBeTruthy()
-                expect(result.error).toEqual("(StyledTable::stylesFor) Invalid row and/or column index; row_index: -1; column_index: 3; valid_row_index: [0, 6); valid_column_index: [0, 6)")
+                expect(result.error).toEqual("(StyledTable::stylesFor) Invalid row and/or column index; row_index: -1; column_index: 3; valid_row_index: [0, 7); valid_column_index: [0, 6)")
             })
 
             test('should return a failure when getting a style for a row index that is too large', () => {
-                const result = styledTable.stylesForTableCoordinates(6, 3)
+                const result = styledTable.stylesForTableCoordinates(7, 3)
                 expect(result.failed).toBeTruthy()
-                expect(result.error).toEqual("(StyledTable::stylesFor) Invalid row and/or column index; row_index: 6; column_index: 3; valid_row_index: [0, 6); valid_column_index: [0, 6)")
+                expect(result.error).toEqual("(StyledTable::stylesFor) Invalid row and/or column index; row_index: 7; column_index: 3; valid_row_index: [0, 7); valid_column_index: [0, 6)")
             })
 
             test('should get the row header style for (1, 0) because table has row header style', () => {
@@ -263,6 +264,110 @@ describe('styling data tables', () => {
                     font: {...defaultTableFont, size: 12, weight: 600},
                 } as CellStyle)
             })
+        })
+
+        describe('set styles for multiple rows, columns, and cells', () => {
+
+            function expectDefaultCellStyleFor(styledTable: StyledTable<string>, row: number, column: number) {
+                expect(styledTable.stylesForTableCoordinates(row, column).getOrThrow()).toEqual(defaultCellStyle)
+            }
+
+            test('should be able to set the style for multiple columns at once', () => {
+                const styledColumns = [1, 3, 4]
+                const styledTable: StyledTable<string> = TableStyler.fromTableData(formattedTableData)
+                    .withColumnStyles(styledColumns, {padding: {left: 1000, right: 1111}}, 75)
+                    .styleTable()
+                const unstyledRows = [1, 3, 4, 5]
+                const unstyledColumns = [0, 2, 5]
+                for (const row of unstyledRows) {
+                    for (const column of unstyledColumns) {
+                        expectDefaultCellStyleFor(styledTable, row, column)
+                    }
+                }
+
+                for (const column of styledColumns) {
+                    expect(styledTable.columnStyleFor(column).map(styling => styling.style).getOrThrow())
+                        .toEqual({...defaultColumnStyle, padding: {left: 1000, right: 1111}})
+                }
+            })
+
+            test('should be able to set the style for all columns at once', () => {
+                const styledColumns = [0, 1, 2, 3, 4, 5]
+                const styledTable: StyledTable<string> = TableStyler.fromTableData(formattedTableData)
+                    // an empty array means that all the columns should be styled
+                    .withColumnStyles([], {padding: {left: 1000, right: 1111}}, 75)
+                    .styleTable()
+
+                for (const column of styledColumns) {
+                    expect(styledTable.columnStyleFor(column).map(styling => styling.style).getOrThrow())
+                        .toEqual({...defaultColumnStyle, padding: {left: 1000, right: 1111}})
+                }
+            })
+
+            test('should be able to set the style for multiple rows at once', () => {
+                const styledRows = [1, 3, 4]
+                const styledTable: StyledTable<string> = TableStyler.fromTableData(formattedTableData)
+                    .withRowStyles(styledRows, {padding: {top: 1000, bottom: 1111}}, 75)
+                    .styleTable()
+                const unstyledRows = [0, 2]
+                const unstyledColumns = [0, 1, 2, 3, 4, 5]
+                for (const row of unstyledRows) {
+                    for (const column of unstyledColumns) {
+                        expectDefaultCellStyleFor(styledTable, row, column)
+                    }
+                }
+
+                for (const row of styledRows) {
+                    expect(styledTable.rowStyleFor(row).map(styling => styling.style).getOrThrow())
+                        .toEqual({...defaultRowStyle, padding: {top: 1000, bottom: 1111}})
+                }
+            })
+
+            test('should be able to set the style for all rows at once', () => {
+                const styledRows = [0, 1, 2, 3, 4]
+                const styledTable: StyledTable<string> = TableStyler.fromTableData(formattedTableData)
+                    // an empty array means that all the columns should be styled
+                    .withRowStyles([], {padding: {top: 1000, bottom: 1111}}, 75)
+                    .styleTable()
+
+                for (const row of styledRows) {
+                    expect(styledTable.rowStyleFor(row).map(styling => styling.style).getOrThrow())
+                        .toEqual({...defaultRowStyle, padding: {top: 1000, bottom: 1111}})
+                }
+            })
+        })
+
+        describe('conditionally set styles for cells', () => {
+            function expectDefaultCellStyleFor(styledTable: StyledTable<string>, row: number, column: number) {
+                expect(styledTable.stylesForTableCoordinates(row, column).getOrThrow()).toEqual(defaultCellStyle)
+            }
+
+            test('should be able to set the style for multiple columns at once', () => {
+                const styledTable: StyledTable<string> = TableStyler.fromTableData(formattedTableData)
+                    .withCellStyleWhen(
+                        (value, row, column) => parseInt(value) >= 45678 && column === 2,
+                        {padding: {...defaultTablePadding, left: 1000, right: 1111}},
+                        75
+                    )
+                    .styleTable()
+                const unstyledColumns = [0, 1, 3, 4]
+                const unstyledRows = [0, 1, 2, 3, 4, 5]
+                for (const row of unstyledRows) {
+                    for (const column of unstyledColumns) {
+                        expectDefaultCellStyleFor(styledTable, row, column)
+                    }
+                }
+                expectDefaultCellStyleFor(styledTable, 0, 2)
+                expectDefaultCellStyleFor(styledTable, 1, 2)
+                expectDefaultCellStyleFor(styledTable, 2, 2)
+                expectDefaultCellStyleFor(styledTable, 3, 2)
+
+                for (const row of [4, 5]) {
+                    expect(styledTable.cellStyleFor(row, 2).map(styling => styling.style).getOrThrow())
+                        .toEqual({...defaultCellStyle, padding: {...defaultTablePadding, left: 1000, right: 1111}})
+                }
+            })
+
         })
     })
 })
