@@ -1,6 +1,6 @@
-import {TableData} from "./tableData";
+import {TableData} from "./TableData";
 import {DataFrame} from "data-frame-ts"
-import {defaultFormatter, TableFormatter} from "./tableFormatter";
+import {defaultFormatter, TableFormatter} from "./TableFormatter";
 import {
     type Border,
     type CellStyle,
@@ -18,9 +18,8 @@ import {
     type FooterStyle,
     type RowHeaderStyle,
     type Styling,
-} from "./stylings.ts";
-import {describe, expect, test} from "vitest";
-import {type StyledTable, TableStyler} from "./tableStyler.ts";
+} from "./stylings";
+import {type StyledTable, TableStyler} from "./TableStyler";
 
 
 describe('styling data tables', () => {

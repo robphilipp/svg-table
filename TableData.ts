@@ -1,12 +1,6 @@
-import {DataFrame} from "data-frame-ts";
+import {DataFrame, indexFrom} from "data-frame-ts";
 import {failureResult, type Result, successResult} from "result-fn";
-import {indexFrom} from "data-frame-ts/dist/DataFrame";
-import {defaultFormatting, type Formatting, TableFormatterType} from "./tableFormatter";
-
-/**
- * Represents a row
- */
-export type Row<V> = Array<V>
+import {defaultFormatting, type Formatting, TableFormatterType} from "./TableFormatter";
 
 /**
  * The types of tags the {@link TableData} supports

@@ -1,9 +1,9 @@
 import {select, type Selection} from 'd3';
 import {type BorderSelection, type GroupSelection, type RectSelection, type TextSelection} from "./d3types";
-import {textHeightOf, textWidthOf} from "./tableUtils.ts";
-import {TableData} from "./tableData";
+import {textHeightOf, textWidthOf} from "./tableUtils";
+import {TableData} from "./TableData";
 import {type Result} from "result-fn";
-import {StyledTable} from "./tableStyler";
+import {StyledTable} from "./TableStyler";
 import {
     BorderLocation,
     type CellStyle,
@@ -14,9 +14,9 @@ import {
     defaultRowStyle,
     type TextAlignment,
     type VerticalTextAlignment
-} from './stylings.ts';
+} from './stylings';
 import {DataFrame} from "data-frame-ts";
-import {defaultFormatting} from "./tableFormatter";
+import {defaultFormatting} from "./TableFormatter";
 
 export type ElementPlacementInfo = {
     cellSelection: RectSelection
@@ -27,7 +27,7 @@ export type ElementPlacementInfo = {
     cellStyle: CellStyle
 }
 
-type TextAnchor = "start" | "middle" | "end"
+export type TextAnchor = "start" | "middle" | "end"
 
 function textAnchorFrom(align: TextAlignment): TextAnchor {
     switch (align) {
@@ -40,7 +40,7 @@ function textAnchorFrom(align: TextAlignment): TextAnchor {
     }
 }
 
-type DominantBaseline =
+export type DominantBaseline =
     "auto"
     | "text-top"
     | "central"

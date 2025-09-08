@@ -1,6 +1,6 @@
 import {DataFrame, type Tag, type TagCoordinate, type TagValue} from "data-frame-ts";
 import {failureResult, type Result, successResult} from "result-fn";
-import {TableData} from "./tableData";
+import {TableData} from "./TableData";
 
 /**
  * Type representing a formatter function

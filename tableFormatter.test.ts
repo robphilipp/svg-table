@@ -1,7 +1,6 @@
-import {TableData} from "./tableData";
+import {TableData} from "./TableData";
 import {DataFrame} from "data-frame-ts"
-import {TableFormatter, defaultFormatter} from "./tableFormatter";
-import {expect, test, describe} from "vitest";
+import {TableFormatter, defaultFormatter} from "./TableFormatter";
 
 
 describe('creating tables with mixed data types', () => {

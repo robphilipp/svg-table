@@ -1,4 +1,4 @@
-import {TableData} from "./tableData";
+import {TableData} from "./TableData";
 import {CellCoordinate, ColumnCoordinate, DataFrame, RowCoordinate, type Tag, type TagValue} from "data-frame-ts";
 import {failureResult, type Result, successResult} from "result-fn";
 import {
@@ -28,9 +28,8 @@ import {
     type Stylings,
     type TableFont,
     type TableStylerProps,
-    TableStyleType, defaultBorder
-} from "./stylings.ts";
-import type {Margin} from "../App.tsx";
+    TableStyleType, defaultBorder, Margin
+} from "./stylings";
 
 /**
  * Represents a table with applied styles.

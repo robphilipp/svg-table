@@ -1,6 +1,5 @@
 import {DataFrame} from "data-frame-ts";
-import {TableData} from "./tableData";
-import {expect, test, describe} from "vitest";
+import {TableData} from "./TableData";
 
 
 describe('creating and manipulating table data', () => {
