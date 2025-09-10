@@ -1,270 +1,37 @@
-import {TableData} from "./tableData";
-// import {defaultTableFont} from "./tableUtils";
+import {TableData} from "./TableData";
 import {CellCoordinate, ColumnCoordinate, DataFrame, RowCoordinate, type Tag, type TagValue} from "data-frame-ts";
 import {failureResult, type Result, successResult} from "result-fn";
-
-/**
- * Represents a styling configuration with a priority level.
- * Higher priority styles will override lower priority styles when multiple are applied.
- */
-export type Styling<S> = {
-    style: S
-    priority: number
-}
-
-/**
- * Creates a Styling object with the given style and priority.
- * @param style The style to apply
- * @param defaultStyle The default style that is used to fill in missing style attributes
- * @param priority The priority level of the style (higher values take precedence)
- * @returns A Styling object containing the style and priority
- */
-export function stylingFor<S>(style: Partial<S>, defaultStyle: S, priority: number = 0): Styling<S> {
-    return {style: {...defaultStyle, ...style}, priority}
-}
-
-
-/**
- * Enum representing different types of table styling elements.
- * Used as identifiers when tagging different parts of the table with styles.
- */
-enum TableStyleType {
-    COLUMN_HEADER = "column_header_style",
-    ROW_HEADER = "row_header_style",
-    FOOTER = "footer_style",
-    ROW = "row_style",
-    COLUMN = "column_style",
-    CELL = "cell_style"
-}
-
-/**
- * Properties for the TableStyler class.
- * Contains all the styling information and data for a table.
- */
-type TableStylerProps<V> = {
-    dataFrame: DataFrame<V>
-    readonly font: TableFont
-    border: Border
-    background: Background
-    dimension: Pick<Dimension, "width" | "height">
-    padding: Padding
-    margin: Margin
-    readonly errors: Array<string>
-}
-
-/**
- * Defines the font properties for table text.
- */
-export type TableFont = {
-    size: number
-    color: string
-    family: string
-    weight: number
-}
-
-export const defaultTableFont: TableFont = {
-    size: 13,
-    color: '#d2933f',
-    family: 'sans-serif',
-    weight: 450,
-}
-
-/**
- * Defines the background properties for table elements.
- */
-export type Background = {
-    color: string
-    opacity: number
-}
-export const defaultTableBackground: Background = {color: '#fff', opacity: 0}
-
-/**
- * Defines the padding properties for table elements.
- * Specifies the space between the content and the border.
- */
-export type Padding = {
-    left: number
-    right: number
-    top: number
-    bottom: number
-}
-export const defaultTablePadding: Padding = {left: 0, right: 0, top: 0, bottom: 0}
-
-/**
- * Defines the margin properties for table elements.
- * Specifies the space outside the border.
- */
-export type Margin = {
-    left: number
-    right: number
-    top: number
-    bottom: number
-}
-export const defaultTableMargin: Margin = {left: 0, right: 0, top: 0, bottom: 0}
-
-/**
- * Defines the border properties for table elements.
- * Controls the appearance of the border around table elements.
- */
-export type Border = {
-    color: string
-    opacity: number
-    width: number
-    radius: number
-}
-export const defaultTableBorder: Border = {color: 'black', radius: 0, width: 0, opacity: 0}
-
-/**
- * Defines the dimension properties for table elements.
- * Controls the size constraints including width and height with their minimum,
- * maximum, and default values.
- */
-export type Dimension = {
-    width: number
-    defaultWidth: number
-    minWidth: number
-    maxWidth: number
-
-    height: number
-    defaultHeight: number
-    minHeight: number
-    maxHeight: number
-}
-
-export const defaultDimension: Dimension = {
-    width: 60,
-    defaultWidth: 70,
-    minWidth: 50,
-    maxWidth: 80,
-
-    height: 15,
-    defaultHeight: 20,
-    minHeight: 10,
-    maxHeight: 30
-}
-
-/**
- * The style for each column (for what is not determined by each row's style).
- */
-export type ColumnStyle = {
-    alignText: "left" | "center" | "right"
-    dimension: Pick<Dimension, "defaultWidth" | "minWidth" | "maxWidth">
-    padding: Pick<Padding, "left" | "right">
-}
-
-export const defaultColumnStyle: ColumnStyle = {
-    alignText: "left",
-    dimension: {defaultWidth: 60, minWidth: 40, maxWidth: 80},
-    padding: {left: 0, right: 0}
-}
-
-/**
- * Note that the {@link ColumnStyle} determines the text alignment for
- * each column. Therefore, the alignment of the text in a row is determined
- * by the alignment for all the rows in the column.
- */
-export type RowStyle = {
-    font: TableFont
-    background: Background
-    dimension: Pick<Dimension, "defaultHeight" | "minHeight" | "maxHeight">
-    padding: Pick<Padding, "top" | "bottom">
-}
-
-export const defaultRowStyle: RowStyle = {
-    font: defaultTableFont,
-    background: defaultTableBackground,
-    dimension: {defaultHeight: 20, minHeight: 20, maxHeight: 20},
-    padding: {top: 0, bottom: 0}
-}
-
-export type TextAlignment = "left" | "center" | "right"
-
-export type CellStyle = {
-    font: TableFont
-    // alignText: "left" | "center" | "right"
-    alignText: TextAlignment
-    background: Background
-    dimension: Dimension
-    padding: Padding
-    border: Border
-}
-
-export const defaultCellStyle: CellStyle = {
-    font: defaultTableFont,
-    alignText: "left",
-    background: defaultTableBackground,
-    dimension: defaultDimension,
-    padding: defaultTablePadding,
-    border: defaultTableBorder
-}
-
-/**
- * Confusing as it may be, this is the style for the **row** that holds the
- * headers for each column. The styling for this row may differ from the
- * other rows in the table.
- */
-export type ColumnHeaderStyle = {
-    font: TableFont
-    alignText: "left" | "right" | "center"
-    dimension: Pick<Dimension, "height" | "maxHeight" | "minHeight">
-    padding: Pick<Padding, "top" | "bottom">
-    background: Background
-}
-
-export const defaultColumnHeaderStyle: ColumnHeaderStyle = {
-    font: {...defaultTableFont, weight: 600},
-    alignText: "left",
-    dimension: {height: 20, maxHeight: 20, minHeight: 20},
-    padding: {top: 0, bottom: 0},
-    background: defaultTableBackground
-}
-
-/**
- * Confusing as it may be, this is the style for the **column** that holds
- * the headers for each row. The styling for this column may differ from the
- * columns in the table.
- */
-export type RowHeaderStyle = {
-    font: TableFont
-    alignText: "left" | "right" | "center"
-    padding: Pick<Padding, "left" | "right">
-    background: Background
-}
-
-export const defaultRowHeaderStyle: RowHeaderStyle = {
-    font: defaultTableFont,
-    alignText: "left",
-    padding: {left: 0, right: 0},
-    background: defaultTableBackground
-}
-
-/**
- * Defines the style for the footer row of the table.
- * Controls the appearance of the footer including font, text alignment,
- * height, padding, and background.
- */
-export type FooterStyle = {
-    font: TableFont
-    alignText: "left" | "right" | "center"
-    dimension: Pick<Dimension, "height">
-    padding: Pick<Padding, "top" | "bottom">
-    background: Background
-}
-
-export const defaultFooterStyle: FooterStyle = {
-    font: defaultTableFont,
-    alignText: "left",
-    dimension: {height: 20},
-    padding: {top: 0, bottom: 0},
-    background: defaultTableBackground
-}
-
-type Stylings = Styling<RowHeaderStyle> |
-    Styling<ColumnHeaderStyle> |
-    Styling<FooterStyle> |
-    Styling<RowStyle> |
-    Styling<ColumnStyle> |
-    Styling<CellStyle>
+import {
+    type Background,
+    type Border,
+    type CellStyle,
+    type ColumnHeaderStyle,
+    type ColumnStyle,
+    defaultBorder,
+    defaultCellStyle,
+    defaultColumnHeaderStyle,
+    defaultColumnStyle,
+    defaultDimension,
+    defaultFooterStyle,
+    defaultRowHeaderStyle,
+    defaultRowStyle,
+    defaultTableBackground,
+    defaultTableFont,
+    defaultTableMargin,
+    defaultTablePadding,
+    type Dimension,
+    type FooterStyle,
+    Margin,
+    type Padding,
+    type RowHeaderStyle,
+    type RowStyle,
+    type Styling,
+    stylingFor,
+    type Stylings,
+    type TableFont,
+    type TableStylerProps,
+    TableStyleType
+} from "./stylings";
 
 /**
  * Represents a table with applied styles.
@@ -403,14 +170,26 @@ export class StyledTable<V> {
         return successResult(tags[0])
     }
 
+    /**
+     * Checks if the table has a row header.
+     * @returns `true` if the table has a row header, `false` otherwise
+     */
     hasRowHeader(): boolean {
         return TableData.hasRowHeader(this.dataFrame)
     }
 
+    /**
+     * Checks if the table has a column header.
+     * @returns `true` if the table has a row header, `false` otherwise
+     */
     hasColumnHeader(): boolean {
         return TableData.hasColumnHeader(this.dataFrame)
     }
 
+    /**
+     * Checks if the table has a footer header.
+     * @returns `true` if the table has a row header, `false` otherwise
+     */
     hasFooter(): boolean {
         return TableData.hasFooter(this.dataFrame)
     }
@@ -441,6 +220,10 @@ export class StyledTable<V> {
             .map(tag => tag.value as Styling<ColumnHeaderStyle>)
     }
 
+    /**
+     * Gets the style for the footer.
+     * @returns A Result containing the footer style if found, or an error message
+     */
     footerStyle(): Result<Styling<FooterStyle>, string> {
         if (!TableData.hasFooter(this.dataFrame)) {
             return failureResult("(StyledTable::footerStyle) The table data does not have a footer")
@@ -588,30 +371,49 @@ export class StyledTable<V> {
         const cellStyle = availableStyling
             .sort((stylingA: Stylings, stylingB: Stylings) => stylingA.priority - stylingB.priority)
             .reduce((style: CellStyle, curr: Stylings) => ({
-                // @ts-ignore
-                font: (curr.style.hasOwnProperty('font') ? {...style.font, ...curr.style.font} as TableFont : (style.hasOwnProperty('font') ? {...style.font} : defaultTableFont)),
-                // @ts-ignore
-                alignText: (curr.style.hasOwnProperty('alignText') ? curr.style.alignText as "left" | "center" | "right" : (style.hasOwnProperty('alignText') ? style.alignText : defaultColumnStyle.alignText)),
-                // @ts-ignore
-                background: (curr.style.hasOwnProperty('background') ? {...style.background, ...curr.style.background} as Background : (style.hasOwnProperty('background') ? style.background : defaultTableBackground)),
-                // @ts-ignore
-                dimension: (curr.style.hasOwnProperty('dimension') ? {...style.dimension, ...curr.style.dimension} as Dimension : (style.hasOwnProperty('dimension') ? {...style.dimension} : defaultDimension)),
-                // @ts-ignore
-                padding: (curr.style.hasOwnProperty('padding') ? {...style.padding, ...curr.style.padding} as Padding : (style.hasOwnProperty('padding') ? {...style.padding} : defaultTablePadding)),
-                // @ts-ignore
-                border: (curr.style.hasOwnProperty('border') ? {...style.border, ...curr.style.border} as Border : (style.hasOwnProperty('border') ? {...style.border} : defaultTableBorder)),
-                // // @ts-ignore
-                // font: (curr.style.hasOwnProperty('font') ? {...defaultTableFont, ...curr.style.font} as TableFont : (style.hasOwnProperty('font') ? {...style.font} : defaultTableFont)),
-                // // @ts-ignore
-                // alignText: (curr.style.hasOwnProperty('alignText') ? curr.style.alignText as "left" | "center" | "right" : (style.hasOwnProperty('alignText') ? style.alignText : defaultColumnStyle.alignText)),
-                // // @ts-ignore
-                // background: (curr.style.hasOwnProperty('background') ? {...defaultTableBackground, ...curr.style.background} as Background : (style.hasOwnProperty('background') ? style.background : defaultTableBackground)),
-                // // @ts-ignore
-                // dimension: (curr.style.hasOwnProperty('dimension') ? {...defaultDimension, ...curr.style.dimension} as Dimension : (style.hasOwnProperty('dimension') ? {...style.dimension} : defaultDimension)),
-                // // @ts-ignore
-                // padding: (curr.style.hasOwnProperty('padding') ? {...defaultTablePadding, ...curr.style.padding} as Padding : (style.hasOwnProperty('padding') ? {...style.padding} : defaultTablePadding)),
-                // // @ts-ignore
-                // border: (curr.style.hasOwnProperty('border') ? {...defaultTableBorder, ...curr.style.border} as Border : (style.hasOwnProperty('border') ? {...style.border} : defaultTableBorder)),
+                font:
+                    (curr.style.hasOwnProperty('font') ?
+                            // @ts-ignore
+                            {...style.font, ...curr.style.font} as TableFont : (
+                                style.hasOwnProperty('font') ? {...style.font} : defaultTableFont)
+                    ),
+                alignText:
+                    (curr.style.hasOwnProperty('alignText') ?
+                            // @ts-ignore
+                            curr.style.alignText as TextAlignment : (
+                                style.hasOwnProperty('alignText') ? style.alignText : defaultColumnStyle.alignText)
+                    ),
+                verticalAlignText:
+                    (curr.style.hasOwnProperty('verticalAlignText') ?
+                            // @ts-ignore
+                            curr.style.verticalAlignText as VerticalTextAlignment : (
+                                style.hasOwnProperty('verticalAlignText') ? style.verticalAlignText : defaultColumnStyle.verticalAlignText
+                            )
+                    ),
+                background:
+                    (curr.style.hasOwnProperty('background') ?
+                            // @ts-ignore
+                            {...style.background, ...curr.style.background} as Background : (
+                                style.hasOwnProperty('background') ? style.background : defaultTableBackground)
+                    ),
+                dimension:
+                    (curr.style.hasOwnProperty('dimension') ?
+                            // @ts-ignore
+                            {...style.dimension, ...curr.style.dimension} as Dimension : (
+                                style.hasOwnProperty('dimension') ? {...style.dimension} : defaultDimension)
+                    ),
+                padding:
+                    (curr.style.hasOwnProperty('padding') ?
+                            // @ts-ignore
+                            {...style.padding, ...curr.style.padding} as Padding : (
+                                style.hasOwnProperty('padding') ? {...style.padding} : defaultTablePadding)
+                    ),
+                border:
+                    (curr.style.hasOwnProperty('border') ?
+                            // @ts-ignore
+                            {...style.border, ...curr.style.border} as Border : (
+                                style.hasOwnProperty('border') ? {...style.border} : defaultBorder)
+                    ),
             }), defaultCellStyle)
 
         return successResult(cellStyle)
@@ -638,7 +440,7 @@ export class TableStyler<V> {
     private constructor(
         private dataFrame: DataFrame<V>,
         private font: TableFont = defaultTableFont,
-        private border: Border = defaultTableBorder,
+        private border: Border = defaultBorder,
         private background: Background = defaultTableBackground,
         private dimension: Pick<Dimension, "width" | "height"> = {width: NaN, height: NaN},
         private padding: Padding = defaultTablePadding,
@@ -709,10 +511,17 @@ export class TableStyler<V> {
         )
     }
 
+    /**
+     * Applies the specified font settings for the table and returns a new {@link TableStyler}
+     * instance with the updated font configuration.
+     *
+     * @param font - The font configuration to be applied. This object can include partial
+     * properties of the TableFont.
+     * @return A new {@link TableStyler} instance with the updated font settings.
+     */
     withTableFont(font: Partial<TableFont>): TableStyler<V> {
         const builder = this.copy()
         builder.font = {...defaultTableFont, ...font}
-        // builder.font = {...builder.font, ...font}
         return builder
     }
 
@@ -887,8 +696,25 @@ export class TableStyler<V> {
             .getOrElse(this)
     }
 
-    withRowStyles(rowIndexes: Array<number>, rowStyle: Partial<RowStyle>, priority: number = 0): TableStyler<V> {
-        const indexes = rowIndexes.length > 0 ? rowIndexes : new Array(this.dataFrame.rowCount()).fill(0).map((_, i) => i)
+    /**
+     * Applies specific styles to rows in a table based on the provided row indexes.
+     *
+     * @param rowIndexes - An array of row indexes to which the styles will be applied. If the
+     * array is empty, all rows will be styled.
+     * @param rowStyle - An object representing the styles to apply to the specified rows.
+     * @param [priority=0] - An optional priority value for the styles. Higher priority values
+     * override lower ones.
+     * @return A new TableStyler instance with the specified row styles applied.
+     * @see withRowStyle
+     */
+    withRowStyles(
+        rowIndexes: Array<number>,
+        rowStyle: Partial<RowStyle>,
+        priority: number = 0
+    ): TableStyler<V> {
+        const indexes = rowIndexes.length > 0 ?
+            rowIndexes :
+            new Array(this.dataFrame.rowCount()).fill(0).map((_, i) => i)
         return TableStyler.withRowStyles(this, indexes, rowStyle, priority)
     }
 
@@ -929,8 +755,24 @@ export class TableStyler<V> {
             .getOrElse(this)
     }
 
-    withColumnStyles(columnIndexes: Array<number>, columnStyle: Partial<ColumnStyle>, priority: number = 0): TableStyler<V> {
-        const indexes = columnIndexes.length > 0 ? columnIndexes : new Array(this.dataFrame.columnCount()).fill(0).map((_, i) => i)
+    /**
+     * Applies specified styles to the columns of a table.
+     *
+     * @param columnIndexes - Array of column indexes to which the style should be applied. If the array
+     * is empty, styles will be applied to all columns.
+     * @param columnStyle - Partial column style configuration object defining the styles to be applied.
+     * @param [priority=0] - Optional priority value to determine the precedence of this style over others.
+     * @return Returns an instance of TableStyler with the updated column styles applied.
+     * @see withColumnStyle
+     */
+    withColumnStyles(
+        columnIndexes: Array<number>,
+        columnStyle: Partial<ColumnStyle>,
+        priority: number = 0
+    ): TableStyler<V> {
+        const indexes = columnIndexes.length > 0 ?
+            columnIndexes :
+            new Array(this.dataFrame.columnCount()).fill(0).map((_, i) => i)
         return TableStyler.withColumnStyles(this, indexes, columnStyle, priority)
     }
 
@@ -961,7 +803,7 @@ export class TableStyler<V> {
      */
     withCellStyle(rowIndex: number, columnIndex: number, cellStyle: Partial<CellStyle>, priority: number = 0): TableStyler<V> {
         if (rowIndex < 0 || rowIndex >= TableData.tableRowCount(this.dataFrame) ||
-            columnIndex < 0 || columnIndex >= TableData.tableRowCount(this.dataFrame)) {
+            columnIndex < 0 || columnIndex >= TableData.tableColumnCount(this.dataFrame)) {
             this.errors.push(
                 `The (row, column) indices, when setting a cell-style, must be in ` +
                 `([0, ${TableData.tableRowCount(this.dataFrame)}), [0, ${TableData.tableColumnCount(this.dataFrame)}))`
@@ -971,6 +813,31 @@ export class TableStyler<V> {
         // tag the cell with the cell-style
         return this.dataFrame
             .tagCell<Styling<CellStyle>>(rowIndex, columnIndex, TableStyleType.CELL, stylingFor(cellStyle, defaultCellStyle, priority))
+            // when successfully tagged, make an updated copy of this builder with the new data-frame
+            .map(df => this.update({dataFrame: df}))
+            // when failed to tag, add to the errors
+            .onFailure(error => this.errors.push(error))
+            // when failed, return this (unmodified) builder
+            .getOrElse(this)
+    }
+
+    /**
+     * Sets the style for a specific cell based on a predicate.
+     * @param predicate A function that accepts the value, row-index, and column-index of the cell, and
+     * returns `true` if the cell should be styled, or `false` otherwise.
+     * @param cellStyle The style to apply to the cell if the predicate is `true`.
+     * @param priority The style's priority. Higher priority values override lower ones.
+     * @returns A new TableStyler instance with the cell style applied.
+     * @see withCellStyle
+     * @see withCellStyles
+     */
+    withCellStyleWhen(
+        predicate: (value: V, rowIndex: number, columnIndex: number) => boolean,
+        cellStyle: Partial<CellStyle>,
+        priority: number = 0
+    ): TableStyler<V> {
+        return this.dataFrame
+            .tagCellWhen(predicate, TableStyleType.CELL, stylingFor(cellStyle, defaultCellStyle, priority))
             // when successfully tagged, make an updated copy of this builder with the new data-frame
             .map(df => this.update({dataFrame: df}))
             // when failed to tag, add to the errors

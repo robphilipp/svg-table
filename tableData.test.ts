@@ -1,5 +1,5 @@
-import {DataFrame} from "data-frame-ts"
-import {TableData} from "./tableData";
+import {DataFrame} from "data-frame-ts";
+import {TableData} from "./TableData";
 
 
 describe('creating and manipulating table data', () => {

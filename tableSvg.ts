@@ -1,30 +1,33 @@
 import {select, type Selection} from 'd3';
-import {type TextSelection} from "./d3types";
+import {type BorderSelection, type GroupSelection, type RectSelection, type TextSelection} from "./d3types";
 import {textHeightOf, textWidthOf} from "./tableUtils";
-import {type ColumnWidthInfo, type RowHeightInfo} from "./tableUtils";
-import {TableData} from "./tableData";
+import {TableData} from "./TableData";
 import {type Result} from "result-fn";
+import {StyledTable} from "./TableStyler";
 import {
+    BorderLocation,
     type CellStyle,
     defaultCellStyle,
     defaultColumnStyle,
     defaultFooterStyle,
     defaultRowHeaderStyle,
     defaultRowStyle,
-    StyledTable,
-    type TextAlignment
-} from "./tableStyler";
+    type TextAlignment,
+    type VerticalTextAlignment
+} from './stylings';
 import {DataFrame} from "data-frame-ts";
-import {defaultFormatting} from "./tableFormatter";
+import {defaultFormatting} from "./TableFormatter";
 
 export type ElementPlacementInfo = {
-    selection: TextSelection
+    cellSelection: RectSelection
+    textSelection: TextSelection
+    borderSelection: BorderSelection
     textWidth: number
     textHeight: number
     cellStyle: CellStyle
 }
 
-type TextAnchor = "start" | "middle" | "end"
+export type TextAnchor = "start" | "middle" | "end"
 
 function textAnchorFrom(align: TextAlignment): TextAnchor {
     switch (align) {
@@ -37,18 +40,25 @@ function textAnchorFrom(align: TextAlignment): TextAnchor {
     }
 }
 
-export type TableDimensions = {
-    width: number
-    height: number
-    rows: RowHeightInfo
-    columns: ColumnWidthInfo
-}
+export type DominantBaseline =
+    "auto"
+    | "text-top"
+    | "central"
+    | "middle"
+    | "alphabetic"
+    | "ideographic"
+    | "hanging"
+    | "mathematical"
 
-/**
- * Information about the table data
- */
-export type TableDataPlacementInfo = {
-    readonly tableData: TableData<ElementPlacementInfo>
+function dominantBaselineFrom(align: VerticalTextAlignment): DominantBaseline {
+    switch (align) {
+        case "top":
+            return "hanging"
+        case "middle":
+            return "central"
+        case "bottom":
+            return "auto"
+    }
 }
 
 export type CellRenderingDimensions = {
@@ -58,6 +68,8 @@ export type CellRenderingDimensions = {
     // the coordinates relative to the table group of the text
     x: number
     y: number
+    cellX: number
+    cellY: number
 }
 
 export type TableRenderingInfo = {
@@ -68,14 +80,121 @@ export type TableRenderingInfo = {
     renderingInfo: TableData<ElementPlacementInfo & CellRenderingDimensions>
 }
 
-export function elementInfoFrom(selection: TextSelection, cellStyle: CellStyle): ElementPlacementInfo {
+export function elementInfoFrom(
+    textSelection: TextSelection,
+    cellSelection: RectSelection,
+    borderSelection: BorderSelection,
+    cellStyle: CellStyle
+): ElementPlacementInfo {
     return {
-        selection: selection,
-        textWidth: textWidthOf(selection),
-        textHeight: textHeightOf(selection),
+        cellSelection,
+        textSelection,
+        borderSelection,
+        textWidth: textWidthOf(textSelection),
+        textHeight: textHeightOf(textSelection),
         cellStyle
     }
 }
+
+// export class SvgTable<V> {
+//     private constructor(
+//         private readonly uniqueTableId: string,
+//         private readonly tableSelection: GSelection,
+//         private readonly renderingInfo: TableRenderingInfo,
+//         private readonly styledTable: StyledTable<V>,
+//         private readonly container: SVGSVGElement,
+//         private readonly coordinates: [x: number, y: number] | ((width: number, height: number) => [x: number, y: number])
+//     ) {
+//     }
+//
+//     static createTable<V>(
+//         styledTable: StyledTable<V>,
+//         container: SVGSVGElement,
+//         uniqueTableId: string,
+//         coordinates: [x: number, y: number] | ((width: number, height: number) => [x: number, y: number])
+//     ): Result<SvgTable<V>, string> {
+//         // return new SvgTable(styledTable, container, uniqueTableId, coordinates)
+//         // grab a copy of the data as a data-frame
+//         const tableData = styledTable.tableData()
+//
+//         // add the group <g> representing the table, to which all the elements will be added, and
+//         // the group will be translated to the mouse (x, y) coordinates as appropriate
+//         const tableSelection = select<SVGSVGElement | null, any>(container)
+//             .append('g')
+//             .attr('id', tableId(uniqueTableId))
+//             .attr('class', 'tooltip')
+//             .style('fill', styledTable.tableBackground().color)
+//             .style('font-family', styledTable.tableFont().family)
+//             .style('font-size', styledTable.tableFont().size)
+//             .style('font-weight', styledTable.tableFont().weight)
+//
+//         // creates an SVG group to hold the column header (if there is one), and
+//         // then add a cell for each column header element
+//         const {data: columnHeaders} = createColumnHeaderPlacementInfo(tableData, tableSelection, uniqueTableId, styledTable)
+//         const {columnHeader, data: rowHeaders, footer} = createRowHeaderPlacementInfo(tableData, tableSelection, uniqueTableId, styledTable)
+//         const {rowHeader, data: footers} = createFooterPlacementInfo(tableData, tableSelection, uniqueTableId, styledTable)
+//         const data = createDataPlacementInfo(tableData, tableSelection, uniqueTableId, styledTable)
+//
+//         const {top, left} = styledTable.tablePadding()
+//
+//         return TableData
+//             .fromDataFrame<ElementPlacementInfo>(data)
+//             // the column header doesn't need to deal with the value providers, because it is
+//             // the first one added and so there are no row-headers or footers yet.
+//             .withColumnHeader(columnHeaders)
+//             .flatMap(td => td.withRowHeader(
+//                 rowHeaders,
+//                 defaultFormatting<ElementPlacementInfo>(),
+//                 () => columnHeader,
+//                 () => footer
+//             ))
+//             .flatMap(td => td.withFooter(
+//                 footers,
+//                 defaultFormatting<ElementPlacementInfo>(),
+//                 () => rowHeader
+//             ))
+//             .map(td => {
+//                 const info = calculateRenderingInfo(td, styledTable, coordinates)
+//                 tableSelection.attr('transform', `translate(${info.tableX + left}, ${info.tableY + top})`)
+//                 return info
+//             })
+//             .map(renderingInfo => placeTextInTable(renderingInfo))
+//             .map(renderingInfo => new SvgTable(uniqueTableId, tableSelection, renderingInfo, styledTable, container, coordinates))
+//     }
+//
+//     private static updateTable<V>(
+//         styledTable: StyledTable<V>,
+//         container: SVGSVGElement,
+//         uniqueTableId: string,
+//         coordinates: [x: number, y: number] | ((width: number, height: number) => [x: number, y: number])
+//     ): Result<SvgTable<V>, string> {
+//         const {top, left} = styledTable.tablePadding()
+//
+//         return TableData
+//             .fromDataFrame<ElementPlacementInfo>(data)
+//             // the column header doesn't need to deal with the value providers, because it is
+//             // the first one added and so there are no row-headers or footers yet.
+//             .withColumnHeader(columnHeaders)
+//             .flatMap(td => td.withRowHeader(
+//                 rowHeaders,
+//                 defaultFormatting<ElementPlacementInfo>(),
+//                 () => columnHeader,
+//                 () => footer
+//             ))
+//             .flatMap(td => td.withFooter(
+//                 footers,
+//                 defaultFormatting<ElementPlacementInfo>(),
+//                 () => rowHeader
+//             ))
+//             .map(td => {
+//                 const info = calculateRenderingInfo(td, styledTable, coordinates)
+//                 tableSelection.attr('transform', `translate(${info.tableX + left}, ${info.tableY + top})`)
+//                 return info
+//             })
+//             .map(renderingInfo => placeTextInTable(renderingInfo))
+//             .map(renderingInfo => new SvgTable(uniqueTableId, tableSelection, renderingInfo, styledTable, container, coordinates))
+//     }
+// }
 
 /**
  * Creates the table
@@ -108,7 +227,11 @@ export function createTable<V>(
     // creates an SVG group to hold the column header (if there is one), and
     // then add a cell for each column header element
     const {data: columnHeaders} = createColumnHeaderPlacementInfo(tableData, tableSelection, uniqueTableId, styledTable)
-    const {columnHeader, data: rowHeaders, footer} = createRowHeaderPlacementInfo(tableData, tableSelection, uniqueTableId, styledTable)
+    const {
+        columnHeader,
+        data: rowHeaders,
+        footer
+    } = createRowHeaderPlacementInfo(tableData, tableSelection, uniqueTableId, styledTable)
     const {rowHeader, data: footers} = createFooterPlacementInfo(tableData, tableSelection, uniqueTableId, styledTable)
     const data = createDataPlacementInfo(tableData, tableSelection, uniqueTableId, styledTable)
 
@@ -136,52 +259,6 @@ export function createTable<V>(
             return info
         })
         .map(renderingInfo => placeTextInTable(renderingInfo))
-    // // creates an SVG group to hold the column header (if there is one), and
-    // // then add a cell for each column header element
-    // const columnHeaders = createColumnHeaderPlacementInfo(tableData, tableSelection, uniqueTableId, styledTable)
-    // const rowHeaders = createRowHeaderPlacementInfo(tableData, tableSelection, uniqueTableId, styledTable)
-    // const footers = createFooterPlacementInfo(tableData, tableSelection, uniqueTableId, styledTable)
-    // const data = createDataPlacementInfo(tableData, tableSelection, uniqueTableId, styledTable)
-    //
-    // // when the table has row-headers, we need to adjust the column-headers
-    // if (tableData.hasRowHeader()) {
-    //     columnHeaders.shift()
-    // }
-    //
-    // // when the table has row-headers, we need to remove the first element from the footers (this value
-    // // will be used as the default value when adding the footer.)
-    // const emptyRowHeader = tableData.hasRowHeader() ? footers.shift() : undefined
-    //
-    // // when the table has a column header, then we need to remove the first element from the row-headers,
-    // // and when the table has a footer, then we need to remove the last element from the row-headers,
-    // // these values will be used as the default values when adding the row-header.
-    // const emptyColHeader = tableData.hasColumnHeader() ? rowHeaders.shift() : undefined
-    // const emptyFooter = tableData.hasFooter() ? rowHeaders.pop() : undefined
-    //
-    // const {top, left} = styledTable.tablePadding()
-    //
-    // return TableData
-    //     .fromDataFrame<ElementPlacementInfo>(data)
-    //     // the column header doesn't need to deal with the value providers, because it is
-    //     // the first one added and so there are no row-headers or footers yet.
-    //     .withColumnHeader(columnHeaders)
-    //     .flatMap(td => td.withRowHeader(
-    //         rowHeaders,
-    //         defaultFormatting<ElementPlacementInfo>(),
-    //         () => emptyColHeader,
-    //         () => emptyFooter
-    //     ))
-    //     .flatMap(td => td.withFooter(
-    //         footers,
-    //         defaultFormatting<ElementPlacementInfo>(),
-    //         () => emptyRowHeader
-    //     ))
-    //     .map(td => {
-    //         const info = calculateRenderingInfo(td, styledTable, coordinates)
-    //         tableSelection.attr('transform', `translate(${info.tableX + left}, ${info.tableY + top})`)
-    //         return info
-    //     })
-    //     .map(renderingInfo => placeTextInTable(renderingInfo))
 }
 
 /*
@@ -197,6 +274,7 @@ enum ELEMENT_TYPE_ID {
     COLUMN_HEADER = "column-header",
     DATA = "data",
     FOOTER = "footer",
+    CELL_TEXT = "cell-data",
     CELL = "cell"
 }
 
@@ -220,8 +298,87 @@ function dataGroupId(uniqueTableId: string): string {
     return `svg-table-${ELEMENT_TYPE_ID.DATA}-group-${uniqueTableId}`
 }
 
-function cellIdFor(uniqueTableId: string, rowIndex: number, columnIndex: number): string {
+function cellTextId(uniqueTableId: string, rowIndex: number, columnIndex: number): string {
+    return `svg-table-${ELEMENT_TYPE_ID.CELL_TEXT}-${rowIndex}-${columnIndex}-${uniqueTableId}`
+}
+
+function cellId(uniqueTableId: string, rowIndex: number, columnIndex: number): string {
     return `svg-table-${ELEMENT_TYPE_ID.CELL}-${rowIndex}-${columnIndex}-${uniqueTableId}`
+}
+
+function borderId(uniqueTableId: string, location: BorderLocation, rowIndex: number, columnIndex: number): string {
+    return `svg-table-${ELEMENT_TYPE_ID.CELL}-${rowIndex}-${columnIndex}-border-${location}-${uniqueTableId}`
+}
+
+function createCellSelection(
+    uniqueTableId: string,
+    rowIndex: number,
+    columnIndex: number,
+    groupSelection: GroupSelection,
+    style: CellStyle
+): RectSelection {
+    return groupSelection
+        .append<SVGRectElement>("rect")
+        .attr('id', cellId(uniqueTableId, rowIndex, columnIndex))
+        .style('fill', style.background.color)
+        .style('fill-opacity', style.background.opacity)
+}
+
+function createBorderSelection(
+    uniqueTableId: string,
+    rowIndex: number,
+    columnIndex: number,
+    groupSelection: GroupSelection,
+    style: CellStyle
+): BorderSelection {
+    let borderSelection: BorderSelection = {}
+    if (style.border.top) {
+        borderSelection.top = groupSelection
+            .append<SVGLineElement>("line")
+            .attr('id', borderId(uniqueTableId, BorderLocation.TOP, rowIndex, columnIndex))
+            .style('stroke', style.border.top.color)
+            .style('stroke-width', style.border.top.width)
+    }
+    if (style.border.bottom) {
+        borderSelection.bottom = groupSelection
+            .append<SVGLineElement>("line")
+            .attr('id', borderId(uniqueTableId, BorderLocation.BOTTOM, rowIndex, columnIndex))
+            .style('stroke', style.border.bottom.color)
+            .style('stroke-width', style.border.bottom.width)
+    }
+    if (style.border.left) {
+        borderSelection.left = groupSelection
+            .append<SVGLineElement>("line")
+            .attr('id', borderId(uniqueTableId, BorderLocation.LEFT, rowIndex, columnIndex))
+            .style('stroke', style.border.left.color)
+            .style('stroke-width', style.border.left.width)
+    }
+    if (style.border.right) {
+        borderSelection.right = groupSelection
+            .append<SVGLineElement>("line")
+            .attr('id', borderId(uniqueTableId, BorderLocation.RIGHT, rowIndex, columnIndex))
+            .style('stroke', style.border.right.color)
+            .style('stroke-width', style.border.right.width)
+    }
+    return borderSelection
+}
+
+function createTextSelection<V>(
+    uniqueTableId: string,
+    rowIndex: number,
+    columnIndex: number,
+    groupSelection: GroupSelection,
+    style: CellStyle,
+    element: V
+): TextSelection {
+    return groupSelection
+        .append<SVGTextElement>("text")
+        .attr('id', cellTextId(uniqueTableId, rowIndex, columnIndex))
+        .style('font-family', style.font.family)
+        .style('font-size', style.font.size)
+        .style('font-weight', style.font.weight)
+        .style('fill', style.font.color)
+        .text(() => `${element}`)
 }
 
 function createColumnHeaderPlacementInfo<V>(
@@ -229,17 +386,13 @@ function createColumnHeaderPlacementInfo<V>(
     tableSelection: Selection<SVGGElement, any, null, undefined>,
     uniqueTableId: string,
     styledTable: StyledTable<V>
-): {rowHeader?: ElementPlacementInfo, data: Array<ElementPlacementInfo>} {
+): { rowHeader?: ElementPlacementInfo, data: Array<ElementPlacementInfo> } {
     return tableData.columnHeader(true)
         .map(columnHeader => {
             const groupSelection = tableSelection
                 .append('g')
                 .attr('id', columnHeaderGroupId(uniqueTableId))
                 .attr('class', 'tooltip-table-header')
-            // .style('fill', styledTable.columnHeaderStyle()
-            //     .map(styling => styling.style.background.color)
-            //     .getOrElse(defaultColumnHeaderStyle.background.color)
-            // )
 
             return columnHeader.map((header, columnIndex) => {
                 // the style with the highest priority for the cell
@@ -247,17 +400,10 @@ function createColumnHeaderPlacementInfo<V>(
                     .stylesForTableCoordinates(0, columnIndex)
                     .getOrElse({...defaultCellStyle})
 
-                const textSelection = groupSelection
-                    .append<SVGTextElement>("text")
-                    .attr('id', cellIdFor(uniqueTableId, 0, columnIndex))
-                    .style('font-family', style.font.family)
-                    .style('font-size', style.font.size)
-                    .style('font-weight', style.font.weight)
-                    .style('fill', style.font.color)
-                    // .style('stroke', style.font.color)
-                    .text(() => `${header}`)
-
-                return elementInfoFrom(textSelection, {...style})
+                const cellSelection = createCellSelection(uniqueTableId, 0, columnIndex, groupSelection, style)
+                const borderSelection = createBorderSelection(uniqueTableId, 0, columnIndex, groupSelection, style)
+                const textSelection = createTextSelection(uniqueTableId, 0, columnIndex, groupSelection, style, header)
+                return elementInfoFrom(textSelection, cellSelection, borderSelection, {...style})
             })
         })
         .map(columnHeader => {
@@ -279,9 +425,8 @@ function createRowHeaderPlacementInfo<V>(
     tableSelection: Selection<SVGGElement, any, null, undefined>,
     uniqueTableId: string,
     styledTable: StyledTable<V>
-): {columnHeader?: ElementPlacementInfo, data: Array<ElementPlacementInfo>, footer?: ElementPlacementInfo} {
+): { columnHeader?: ElementPlacementInfo, data: Array<ElementPlacementInfo>, footer?: ElementPlacementInfo } {
     return tableData
-        // .rowHeader()
         .rowHeader(true, true)
         .map(rowHeader => {
             const groupSelection = tableSelection
@@ -298,17 +443,10 @@ function createRowHeaderPlacementInfo<V>(
                     .stylesForTableCoordinates(rowIndex, 0)
                     .getOrElse({...defaultCellStyle})
 
-                const textSelection = groupSelection
-                    .append<SVGTextElement>("text")
-                    .attr('id', cellIdFor(uniqueTableId, 0, rowIndex))
-                    .style('font-family', style.font.family)
-                    .style('font-size', style.font.size)
-                    .style('font-weight', style.font.weight)
-                    .style('fill', style.font.color)
-                    .text(() => `${header}`)
-
-                // return elementInfoFrom(textSelection, style.alignText, {...style.padding})
-                return elementInfoFrom(textSelection, {...style})
+                const cellSelection = createCellSelection(uniqueTableId, rowIndex, 0, groupSelection, style)
+                const borderSelection = createBorderSelection(uniqueTableId, rowIndex, 0, groupSelection, style)
+                const textSelection = createTextSelection(uniqueTableId, rowIndex, 0, groupSelection, style, header)
+                return elementInfoFrom(textSelection, cellSelection, borderSelection, {...style})
             })
         })
         .map(rowHeader => {
@@ -331,9 +469,8 @@ function createFooterPlacementInfo<V>(
     tableSelection: Selection<SVGGElement, any, null, undefined>,
     uniqueTableId: string,
     styledTable: StyledTable<V>
-): {rowHeader?: ElementPlacementInfo, data: Array<ElementPlacementInfo>} {
+): { rowHeader?: ElementPlacementInfo, data: Array<ElementPlacementInfo> } {
     return tableData
-        // .footer()
         .footer(true)
         .map(footer => {
             const groupSelection = tableSelection
@@ -350,17 +487,10 @@ function createFooterPlacementInfo<V>(
                     .stylesForTableCoordinates(footer.length - 1, columnIndex)
                     .getOrElse({...defaultCellStyle})
 
-                const textSelection = groupSelection
-                    .append<SVGTextElement>("text")
-                    .attr('id', cellIdFor(uniqueTableId, 0, columnIndex))
-                    .style('font-family', style.font.family)
-                    .style('font-size', style.font.size)
-                    .style('font-weight', style.font.weight)
-                    .style('fill', style.font.color)
-                    .text(() => `${ftr}`)
-
-                // return elementInfoFrom(textSelection, style.alignText, {...style.padding})
-                return elementInfoFrom(textSelection, {...style})
+                const cellSelection = createCellSelection(uniqueTableId, footer.length - 1, columnIndex, groupSelection, style)
+                const borderSelection = createBorderSelection(uniqueTableId, footer.length - 1, columnIndex, groupSelection, style)
+                const textSelection = createTextSelection(uniqueTableId, footer.length - 1, columnIndex, groupSelection, style, ftr)
+                return elementInfoFrom(textSelection, cellSelection, borderSelection, {...style})
             })
         })
         .map(footer => {
@@ -401,17 +531,10 @@ function createDataPlacementInfo<V>(
                     .stylesForTableCoordinates(rowIndex + rowOffset, columnIndex + columnOffset)
                     .getOrElse({...defaultCellStyle})
 
-                const textSelection = groupSelection
-                    .append<SVGTextElement>("text")
-                    .attr('id', cellIdFor(uniqueTableId, rowIndex + rowOffset, columnIndex))
-                    .style('font-family', style.font.family)
-                    .style('font-size', style.font.size)
-                    .style('font-weight', style.font.weight)
-                    .style('fill', style.font.color)
-                    .text(() => `${element}`)
-
-                // return elementInfoFrom(textSelection, style.alignText, {...style.padding})
-                return elementInfoFrom(textSelection, {...style})
+                const cellSelection = createCellSelection(uniqueTableId, rowIndex + rowOffset, columnIndex + columnOffset, groupSelection, style)
+                const borderSelection = createBorderSelection(uniqueTableId, rowIndex + rowOffset, columnIndex + columnOffset, groupSelection, style)
+                const textSelection = createTextSelection(uniqueTableId, rowIndex + rowOffset, columnIndex + columnOffset, groupSelection, style, element)
+                return elementInfoFrom(textSelection, cellSelection, borderSelection, {...style})
             })
         })
         .getOrElse(DataFrame.empty<ElementPlacementInfo>())
@@ -438,8 +561,6 @@ function calculateRenderingInfo<V>(
 
     type MinMax = { min: number, max: number, minValues: Array<number>, maxValues: Array<number> }
 
-    // const [x, y] = coordinates
-
     /**
      * Calculates the min and max values for the extracted value from the cell
      * @param elements An array of rows (data frame row slices) or columns (data
@@ -452,7 +573,7 @@ function calculateRenderingInfo<V>(
     ): MinMax {
         return elements.reduce(
             (minMax: MinMax, row: Array<WithWidthHeight>): MinMax => {
-                const cellValue = row.map(cell => extractor(cell))
+                const cellValue = row.map(cell => Math.ceil(extractor(cell)))
                 const {min, max, minValues, maxValues} = minMax
                 const mins = Math.min(...cellValue)
                 minValues.push(mins)
@@ -482,7 +603,6 @@ function calculateRenderingInfo<V>(
 
         // calculate the actual width and height of the cell
         const {width, height} = calculateCellDimensions(style, element.textWidth, element.textHeight)
-        // const {width, height} = element != null ? calculateCellDimensions(style, element.textWidth, element.textHeight) : {width: 0, height: 0}
 
         return {...element, cellWidth: width, cellHeight: height}
     })
@@ -516,7 +636,13 @@ function calculateRenderingInfo<V>(
                 .getOrElse(Math.max(defaultRowStyle.dimension.minHeight, Math.min(defaultRowStyle.dimension.maxHeight, minMaxRowHeights.maxValues[index])))
         }
         return styledTable.rowStyleFor(index)
-            .map(styling => Math.max(styling.style.dimension.minHeight, Math.min(styling.style.dimension.maxHeight, minMaxRowHeights.maxValues[index])))
+            .map(styling => Math.max(
+                styling.style.dimension.minHeight,
+                Math.min(
+                    styling.style.dimension.maxHeight,
+                    minMaxRowHeights.maxValues[index]
+                )
+            ))
             .getOrElse(Math.max(defaultRowStyle.dimension.minHeight, Math.min(defaultRowStyle.dimension.maxHeight, minMaxRowHeights.maxValues[index])))
     })
 
@@ -537,11 +663,11 @@ function calculateRenderingInfo<V>(
 
     // todo gross as shit, is there a better way
     const cumColumnWidths = columnWidths.reduce((sum: Array<number>, curr: number, index) => {
-        sum.push(curr + sum[index])
+        sum.push(Math.ceil(curr) + sum[index])
         return sum
     }, [0])
     const cumRowHeights = rowHeights.reduce((sum: Array<number>, curr: number, index) => {
-        sum.push(curr + sum[index])
+        sum.push(Math.ceil(curr) + sum[index])
         return sum
     }, [0])
     const positionAdjustedDf = dimAdjustedDf
@@ -552,8 +678,10 @@ function calculateRenderingInfo<V>(
                 ...element,
                 width: cellWidth,
                 height: cellHeight,
-                x: cumColumnWidths[columnIndex] + cellXOffset(element, cellWidth),
-                y: cumRowHeights[rowIndex] + element.cellStyle.padding.top,
+                x: cumColumnWidths[columnIndex] + textXOffset(element, cellWidth),
+                y: cumRowHeights[rowIndex] + textYOffset(element, cellHeight),
+                cellX: cumColumnWidths[columnIndex],
+                cellY: cumRowHeights[rowIndex]
             }
         })
 
@@ -605,7 +733,7 @@ function calculateCellDimensions(style: CellStyle, width: number, height: number
  * @param element The element to render
  * @param cellWidth The width of the cell into which the text is rendered
  */
-function cellXOffset(element: ElementPlacementInfo, cellWidth: number): number {
+function textXOffset(element: ElementPlacementInfo, cellWidth: number): number {
     switch (element.cellStyle.alignText) {
         case "left":
             return element.cellStyle.padding.left
@@ -615,6 +743,25 @@ function cellXOffset(element: ElementPlacementInfo, cellWidth: number): number {
 
         case "right":
             return cellWidth - element.cellStyle.padding.right
+
+        default:
+            return cellWidth / 2
+    }
+}
+
+function textYOffset(element: ElementPlacementInfo, cellHeight: number): number {
+    switch (element.cellStyle.verticalAlignText) {
+        case "top":
+            return element.cellStyle.padding.top
+
+        case "middle":
+            return cellHeight / 2
+
+        case "bottom":
+            return cellHeight - element.cellStyle.padding.bottom
+
+        default:
+            return cellHeight / 2
     }
 }
 
@@ -627,11 +774,42 @@ function cellXOffset(element: ElementPlacementInfo, cellWidth: number): number {
 function placeTextInTable(tableRenderingInfo: TableRenderingInfo): TableRenderingInfo {
     const updatedDf = tableRenderingInfo.renderingInfo.unwrapDataFrame()
         .mapElements(info => {
-            info.selection
+            info.cellSelection
+                .attr('width', info.width)
+                .attr('height', info.height)
+                .attr('transform', `translate(${info.cellX}, ${info.cellY})`)
+            info.textSelection
                 .attr('text-anchor', textAnchorFrom(info.cellStyle.alignText))
-                // todo expose style parameter
-                .attr('dominant-baseline', 'central')
+                .attr('dominant-baseline', dominantBaselineFrom(info.cellStyle.verticalAlignText))
                 .attr('transform', `translate(${info.x}, ${info.y})`)
+            if (info.borderSelection.top) {
+                info.borderSelection.top
+                    .attr('x1', info.cellX)
+                    .attr('y1', info.cellY)
+                    .attr('x2', info.cellX + info.width)
+                    .attr('y2', info.cellY)
+            }
+            if (info.borderSelection.bottom) {
+                info.borderSelection.bottom
+                    .attr('x1', info.cellX)
+                    .attr('y1', info.cellY + info.height)
+                    .attr('x2', info.cellX + info.width)
+                    .attr('y2', info.cellY + info.height)
+            }
+            if (info.borderSelection.right) {
+                info.borderSelection.right
+                    .attr('x1', info.cellX + info.width)
+                    .attr('y1', info.cellY)
+                    .attr('x2', info.cellX + info.width)
+                    .attr('y2', info.cellY + info.height)
+            }
+            if (info.borderSelection.left) {
+                info.borderSelection.left
+                    .attr('x1', info.cellX)
+                    .attr('y1', info.cellY)
+                    .attr('x2', info.cellX)
+                    .attr('y2', info.cellY + info.height)
+            }
             return info
         })
     return {
