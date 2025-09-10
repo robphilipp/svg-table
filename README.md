@@ -21,6 +21,12 @@ SVG Table is framework-agnostic and works with any environment where you can acc
   - [3) Overriding specific cells](#3-overriding-specific-cells)
   - [4) Styling the table](#4-styling-the-table)
 - [API Surface (high level)](#api-surface-high-level)
+- [Method Reference](#method-reference)
+  - [TableData methods](#tabledata-methods)
+  - [TableFormatter methods](#tableformatter-methods)
+  - [TableStyler methods](#tablestyler-methods)
+  - [Rendering methods](#rendering-methods)
+  - [Styling helpers](#styling-helpers)
 - [FAQ](#faq)
 - [License](#license)
 
@@ -248,6 +254,183 @@ Use your editor’s type hints for full details, or read the source files:
 - TableStyler.ts
 - tableSvg.ts
 - stylings.ts
+
+
+## Method Reference
+
+[(toc)](#table-of-contents)
+
+### TableData methods
+
+[(toc)](#table-of-contents)
+
+- fromDataFrame(df)
+  - Create a TableData from a DataFrame of values (strings, numbers, dates, etc.).
+  - Example:
+    ```ts
+    const df = DataFrame.from([['A', 1], ['B', 2]]).getOrThrow()
+    const td = TableData.fromDataFrame(df)
+    ```
+- withColumnHeader(header: string[], formatting = defaultFormatting)
+  - Attach a column header row. Returns Result<TableData<...>, string>.
+  - Example:
+    ```ts
+    const td2 = td.withColumnHeader(['Name', 'Qty']).getOrThrow()
+    ```
+- withRowHeader(header: (string|number)[], formatting = defaultFormatting, columnHeaderProvider?, footerProvider?)
+  - Attach a dedicated row header column. If a column header or footer already exists, use the providers so the new tags can reference each other under the hood.
+  - Example:
+    ```ts
+    const td3 = td2.withRowHeader([1, 2]).getOrThrow()
+    ```
+- withFooter(footer: (string|number)[], formatting = defaultFormatting, rowHeaderProvider?)
+  - Attach a footer row. Works with or without row headers.
+  - Example:
+    ```ts
+    const td4 = td3.withFooter(['Total', 3]).getOrThrow()
+    ```
+- hasColumnHeader() / hasRowHeader() / hasFooter()
+  - Booleans over the current table structure.
+  - Example:
+    ```ts
+    if (td4.hasFooter()) { /* ... */ }
+    ```
+- dataRowCount() / dataColumnCount()
+  - The counts of the underlying data only (no headers/footers).
+- tableRowCount() / tableColumnCount()
+  - The counts including any headers and/or footer.
+- data()
+  - Returns Result<DataFrame<V>, string> of the data section only.
+- columnHeader(includeRowHeader = false)
+  - Returns Result<string[]|number[], string> of the column header. When includeRowHeader is true and a row header exists, the left-most row header label(s) are included.
+- rowHeader(includeColumnHeader = false, includeFooter = false)
+  - Returns Result<(string|number)[], string> of the row header column; optionally include the column header cell and/or footer cell for that column.
+- footer(includeRowHeader = false)
+  - Returns Result<(string|number)[], string> of the footer row; optionally include the row header cell for that row.
+- unwrapDataFrame()
+  - Returns the underlying DataFrame (unsafe; for advanced use where you manage tags yourself).
+
+
+### TableFormatter methods
+
+[(toc)](#table-of-contents)
+
+- fromTableData(tableData) / fromDataFrame(dataFrame)
+  - Build a TableFormatter around an existing table or raw data.
+  - Example:
+    ```ts
+    const tf = TableFormatter.fromTableData(td3)
+    ```
+- addColumnFormatter(columnIndex, formatter, priority = 0)
+  - Assign a formatter to a column index in the full table coordinate space (including headers). Higher priority wins.
+  - Example:
+    ```ts
+    const tf2 = tf.addColumnFormatter(1, v => `$ ${(v as number).toFixed(2)}`)
+    ```
+- addColumnFormatters(columnIndexes: number[], formatter, priority = 0)
+  - Convenience for adding the same formatter to multiple columns.
+  - Example:
+    ```ts
+    const tf3 = tf.flatMap(t => t.addColumnFormatters([1,2], v => v.toString()))
+    ```
+- addRowFormatter(rowIndex, formatter, priority = 0)
+  - Assign a formatter to a specific row (e.g., the column header row at index 0).
+  - Example:
+    ```ts
+    const tfHdr = tf.addRowFormatter(0, defaultFormatter, Infinity)
+    ```
+- addRowFormatters(rowIndexes: number[], formatter, priority = 0)
+  - Convenience to format multiple rows.
+- addCellFormatter(rowIndex, columnIndex, formatter, priority = 0)
+  - Most specific override for a single cell.
+  - Example:
+    ```ts
+    const tfCell = tf.addCellFormatter(3, 2, v => (v as string).toUpperCase(), 1000)
+    ```
+- addCellFormatters(cellIndexes: [row, col][], formatter, priority = 0)
+  - Apply the same cell-override to a list of cells.
+- formatTable()
+  - Applies all formatters and returns Result<TableData<string>, string>.
+  - Example:
+    ```ts
+    const formatted = tfHdr.flatMap(t => t.formatTable()).getOrThrow()
+    ```
+- formatTableInto(mapper)
+  - Advanced: Format into a custom element type by mapping each text cell into your own structure.
+
+Utilities (exported): defaultFormatter, defaultFormatting, isFormattingTag, TableFormatterType (enum-ish marker for tags).
+
+
+### TableStyler methods
+
+[(toc)](#table-of-contents)
+
+- fromTableData(tableData) / fromDataFrame(dataFrame)
+  - Start configuring styles for a table.
+- withTableFont(font) / withTableBackground(bg) / withBorder(border)
+  - Set global font, background, and border defaults.
+  - Example:
+    ```ts
+    const ts = TableStyler.fromTableData(formatted)
+      .withTableFont({ ...defaultTableFont(), size: '12px' })
+      .withTableBackground({ color: '#fff' })
+      .withBorder({ ...defaultBorder(), color: '#ddd', width: 1 })
+    ```
+- withDimensions(width, height) / withPadding(padding) / withMargin(margin)
+  - Set overall layout metrics for the table and surrounding whitespace.
+- withRowStyle(rowIndex, style, priority = 0) / withRowStyles(indexes, style, priority)
+  - Apply styles to header/data/footer rows (use table coordinates). Higher priority wins.
+- withColumnStyle(columnIndex, style, priority = 0) / withColumnStyles(indexes, style, priority)
+  - Apply styles to whole columns.
+- withCellStyle(rowIndex, columnIndex, style, priority = 0)
+  - Most specific style override for a single cell.
+- withCellStyleWhen(predicate, style, priority = 0)
+  - Conditional styling; predicate receives (value, rowIndex, columnIndex) in table coordinates.
+  - Example:
+    ```ts
+    const styled = ts
+      .withCellStyleWhen((v, i, j) => j === 2 && Number(v) > 100, { color: '#d00' }, 10)
+      .styleTable()
+      .getOrThrow()
+    ```
+- withColumnHeaderStyle(style, priority) / withRowHeaderStyle(style, priority) / withFooterStyle(style, priority)
+  - Section-specific styles that participate in the same priority system.
+- styleTable()
+  - Finalize styles and produce Result<StyledTable, string>.
+
+StyledTable (result) exposes getters used by the renderer: tableFont(), tableBackground(), tablePadding(), rowStyleFor(), columnStyleFor(), cellStyleFor(), and flags hasColumnHeader()/hasRowHeader()/hasFooter().
+
+
+### Rendering methods
+
+[(toc)](#table-of-contents)
+
+- createTable(styledTable, svgElement, uniqueTableId, coordinates)
+  - Render the styled table into a provided SVGSVGElement, adding a <g id="svg-table-group-..."> group. Coordinates can be [x, y] or a function of (width, height).
+  - Example:
+    ```ts
+    const svg = document.querySelector('svg#app') as unknown as SVGSVGElement
+    createTable(styled, svg, 'orders', (w, h) => [20, 20]).getOrThrow()
+    ```
+- tableId(uniqueTableId)
+  - Helper that returns the id of the root group for a given table name.
+- elementInfoFrom(textSel, cellSel, borderSel, style)
+  - Low-level helper used internally; exposed for tooling/tests.
+
+
+### Styling helpers
+
+[(toc)](#table-of-contents)
+
+- Defaults: defaultTableFont(), defaultTableBackground(), defaultTablePadding(), defaultTableMargin(), defaultBorder(), defaultDimension(), defaultColumnStyle(), defaultRowStyle(), defaultCellStyle(), defaultColumnHeaderStyle(), defaultRowHeaderStyle(), defaultFooterStyle().
+  - Example font override:
+    ```ts
+    const font = { ...defaultTableFont(), family: 'Inter, sans-serif', size: '14px' }
+    ```
+- stylingFor(style)
+  - Wrap a plain style object into an internal Styling tag for use with tagRow/tagColumn APIs (you rarely need this directly; prefer withRowStyle/withColumnStyle/withCellStyle).
+- TableStyleType
+  - Internal discriminator for style tags; useful if you explore raw tags.
 
 
 ## FAQ
