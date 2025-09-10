@@ -88,6 +88,9 @@ export class TableFormatter<V> {
      * @param formatter The formatter
      * @param [priority = 0] The priority of this formatter. If cells have more than one associated formatter,
      * the one with the highest priority number is used.
+     * @see addColumnFormatters
+     * @see addRowFormatter
+     * @see addRowFormatters
      * @example
      * ```typescript
      * // create the data
@@ -131,8 +134,62 @@ export class TableFormatter<V> {
             .map(data => new TableFormatter<V>(data))
     }
 
+    /**
+     * Adds formatters to specified column indexes in a table formatter.
+     *
+     * @param columnIndexes An array of column indexes to which the formatter will be applied.
+     * @param formatter The formatting function to apply to the specified columns.
+     * @param [priority = 0] The priority level for the formatter. Higher priority formatters are applied first.
+     * @return A result indicating the success or failure of adding the column formatters.
+     * @see addColumnFormatter
+     * @see addRowFormatter
+     * @see addRowFormatters
+     * @see addCellFormatter
+     * @see addCellFormatters
+     *
+     * @example
+     * ```typescript
+     * const data = DataFrame.from<string | number | Date>([
+     *     [dateTimeFor(1, 1), 12345, 'gnm-f234', 123.45, 4],
+     *     [dateTimeFor(2, 2), 23456, 'gnm-g234', 23.45, 5],
+     *     [dateTimeFor(3, 3), 34567, 'gnm-h234', 3.65, 40],
+     *     [dateTimeFor(4, 4), 45678, 'gnm-i234', 314.15, 9],
+     * ]).getOrThrow()
+     * const columnHeader = ['Date-Time', 'Customer ID', 'Product ID', 'Purchase Price', 'Amount']
+     * const rowHeader = [1, 2, 3, 4]
+     *
+     * const tableData = TableData.fromDataFrame<string | number | Date>(data)
+     *     .withColumnHeader(columnHeader)
+     *     .flatMap(td => td.withRowHeader(rowHeader))
+     *     .flatMap(tableData => TableFormatter.fromTableData(tableData)
+     *         // add the default formatter for the column header, at the highest priority so that
+     *         // it is the one that applies to the row representing the column header
+     *         .addRowFormatters([0], defaultFormatter, Infinity)
+     *         // add the default formatter for the row header, at the highest priority so that
+     *         // it is the one that applies to the column representing the row header
+     *         .flatMap(tf => tf.addColumnFormatters([0], defaultFormatter, Infinity))
+     *         // add the column formatters for each column at the default (lowest) priority
+     *         // (notice that the columns are shifted by one for the columns because the row-header
+     *         // occupies the first column (index=0))
+     *         .flatMap(tf => tf.addColumnFormatter(1, value => (value as Date).toLocaleDateString()))
+     *         .flatMap(tf => tf.addColumnFormatter(2, value => defaultFormatter(value)))
+     *         .flatMap(tf => tf.addColumnFormatter(4, value => `$ ${(value as number).toFixed(2)}`))
+     *         .flatMap(tf => tf.addColumnFormatter(5, value => `${(value as number).toFixed(0)}`))
+     *         // format the table data and get back a TableData<string>
+     *         .flatMap(tf => tf.formatTable())
+     *     )
+     *     .getOrThrow()
+     *
+     * const expectedData = DataFrame.from<string>([
+     *     ['2/1/2021', '12345', 'gnm-f234', '$ 123.45', '4'],
+     *     ['2/2/2021', '23456', 'gnm-g234', '$ 23.45', '5'],
+     *     ['2/3/2021', '34567', 'gnm-h234', '$ 3.65', '40'],
+     *     ['2/4/2021', '45678', 'gnm-i234', '$ 314.15', '9'],
+     * ]).getOrThrow()
+     * ```
+     */
     addColumnFormatters(columnIndexes: Array<number>, formatter: Formatter<V>, priority: number = 0): Result<TableFormatter<V>, string> {
-        return TableFormatter.addColumnFormatters(this, columnIndexes, formatter, priority)
+        return TableFormatter.addColumnFormatters(this, columnIndexes.slice(), formatter, priority)
     }
 
     private static addColumnFormatters<V>(
@@ -142,7 +199,7 @@ export class TableFormatter<V> {
         priority: number = 0
     ): Result<TableFormatter<V>, string> {
         if (columnIndexes.length > 0) {
-            const columnIndex = columnIndexes.slice().shift()
+            const columnIndex = columnIndexes.shift()
             if (columnIndex != null) {
                 return tableFormatter
                     .addColumnFormatter(columnIndex, formatter, priority)
@@ -152,12 +209,114 @@ export class TableFormatter<V> {
         return successResult(tableFormatter)
     }
 
+    /**
+     * Formatters convert the row value types to formatted strings. The formatter used to format each cell in
+     * a given row depends on the priority of each formatter associated with that cell. The formatter with the
+     * highest priority is used. If two or more formatters for a given cell have the same priority, the selected
+     * formatter is indeterminant.
+     * @param rowIndex The index of the row to which to add the formatter
+     * @param formatter The formatter
+     * @param [priority = 0] The priority of this formatter. If cells have more than one associated formatter,
+     * the one with the highest priority number is used.
+     * @see addColumnFormatter
+     * @see addColumnFormatters
+     * @see addRowFormatters
+     * @example
+     * ```typescript
+     * // create the data
+     * const data = DataFrame.from<string | number | Date>([
+     *     [dateTimeFor(1, 1), 12345, 'gnm-f234', 123.45, 4],
+     *     [dateTimeFor(2, 2), 23456, 'gnm-g234', 23.45, 5],
+     *     [dateTimeFor(3, 3), 34567, 'gnm-h234', 3.65, 40],
+     *     [dateTimeFor(4, 4), 45678, 'gnm-i234', 314.15, 9],
+     * ]).getOrThrow()
+     *
+     * // create the table-data object from the data, and then hand the table-data
+     * // to the table formatter, add column formats, and format the table, getting
+     * // back a new TableData<string>
+     * const tableData: TableData<string> = TableData.fromDataFrame<string | number | Date>(data)
+     *     // from the table-data, create a table-formatter
+     *     .flatMap(tableData => createTableFormatterFrom(tableData)
+     *         // add a column formatter for the first column of dates
+     *         .addColumnFormatter(0, value => (value as Date).toLocaleDateString())
+     *         // add a column formatter to the second column of number
+     *         .flatMap(tf => tf.addColumnFormatter(1, value => defaultFormatter(value)))
+     *         // add a column formatter to the fourth column of currencies
+     *         .flatMap(tf => tf.addColumnFormatter(3, value => `$ ${(value as number).toFixed(2)}`))
+     *         .flatMap(tf => tf.addColumnFormatter(4, value => `${(value as number).toFixed(0)}`))
+     *         // format the table into a new TableData<string> object
+     *         .flatMap(tf => tf.formatTable())
+     *     )
+     *     .getOrThrow()
+     *
+     * // we expect the data-frame in the table data to be the following
+     * const expectedData = DataFrame.from<string>([
+     *     ['2/1/2021', '12345', 'gnm-f234', '$ 123.45', '4'],
+     *     ['2/2/2021', '23456', 'gnm-g234', '$ 23.45', '5'],
+     *     ['2/3/2021', '34567', 'GNM-H234', '$ 3.65', '40'],
+     *     ['2/4/2021', '45678', 'gnm-i234', '$ 314.15', '9'],
+     * ]).getOrThrow()
+     * ```
+     */
     addRowFormatter(rowIndex: number, formatter: Formatter<V>, priority: number = 0): Result<TableFormatter<V>, string> {
         return this.dataFrame
             .tagRow<Formatting<V>>(rowIndex, TableFormatterType.ROW, {formatter, priority})
             .map(data => new TableFormatter<V>(data))
     }
 
+    /**
+     * Adds formatters to specified row indexes in a table formatter.
+     *
+     * @param rowIndexes An array of row indexes to which the formatter will be applied.
+     * @param formatter The formatting function to apply to the specified columns.
+     * @param [priority = 0] The priority level for the formatter. Higher priority formatters are applied first.
+     * @return A result indicating the success or failure of adding the row formatters.
+     * @see addColumnFormatter
+     * @see addRowFormatter
+     * @see addRowFormatters
+     * @see addCellFormatter
+     * @see addCellFormatters
+     * @example
+     * ```typescript
+     * const data = DataFrame.from<string | number | Date>([
+     *     [dateTimeFor(1, 1), 12345, 'gnm-f234', 123.45, 4],
+     *     [dateTimeFor(2, 2), 23456, 'gnm-g234', 23.45, 5],
+     *     [dateTimeFor(3, 3), 34567, 'gnm-h234', 3.65, 40],
+     *     [dateTimeFor(4, 4), 45678, 'gnm-i234', 314.15, 9],
+     * ]).getOrThrow()
+     * const columnHeader = ['Date-Time', 'Customer ID', 'Product ID', 'Purchase Price', 'Amount']
+     * const rowHeader = [1, 2, 3, 4]
+     *
+     * const tableData = TableData.fromDataFrame<string | number | Date>(data)
+     *     .withColumnHeader(columnHeader)
+     *     .flatMap(td => td.withRowHeader(rowHeader))
+     *     .flatMap(tableData => TableFormatter.fromTableData(tableData)
+     *         // add the default formatter for the column header, at the highest priority so that
+     *         // it is the one that applies to the row representing the column header
+     *         .addRowFormatters([0], defaultFormatter, Infinity)
+     *         // add the default formatter for the row header, at the highest priority so that
+     *         // it is the one that applies to the column representing the row header
+     *         .flatMap(tf => tf.addColumnFormatters([0], defaultFormatter, Infinity))
+     *         // add the column formatters for each column at the default (lowest) priority
+     *         // (notice that the columns are shifted by one for the columns because the row-header
+     *         // occupies the first column (index=0))
+     *         .flatMap(tf => tf.addColumnFormatter(1, value => (value as Date).toLocaleDateString()))
+     *         .flatMap(tf => tf.addColumnFormatter(2, value => defaultFormatter(value)))
+     *         .flatMap(tf => tf.addColumnFormatter(4, value => `$ ${(value as number).toFixed(2)}`))
+     *         .flatMap(tf => tf.addColumnFormatter(5, value => `${(value as number).toFixed(0)}`))
+     *         // format the table data and get back a TableData<string>
+     *         .flatMap(tf => tf.formatTable())
+     *     )
+     *     .getOrThrow()
+     *
+     * const expectedData = DataFrame.from<string>([
+     *     ['2/1/2021', '12345', 'gnm-f234', '$ 123.45', '4'],
+     *     ['2/2/2021', '23456', 'gnm-g234', '$ 23.45', '5'],
+     *     ['2/3/2021', '34567', 'gnm-h234', '$ 3.65', '40'],
+     *     ['2/4/2021', '45678', 'gnm-i234', '$ 314.15', '9'],
+     * ]).getOrThrow()
+     * ```
+     */
     addRowFormatters(rowIndexes: Array<number>, formatter: Formatter<V>, priority: number = 0): Result<TableFormatter<V>, string> {
         return TableFormatter.addRowFormatters(this, rowIndexes.slice(), formatter, priority)
     }
@@ -179,14 +338,125 @@ export class TableFormatter<V> {
         return successResult(tableFormatter)
     }
 
+    /**
+     * Adds a formatter to a specified cell based on the row and column indexes.
+     * @param rowIndex The row index of the cell.
+     * @param columnIndex The column index of the cell.
+     * @param formatter The formatter to apply to the cell.
+     * @param [priority = 0] The priority level for the formatter. Higher priority formatters are applied first.
+     * @return A result indicating the success or failure of adding the cell formatter.
+     * @see addColumnFormatter
+     * @see addRowFormatter
+     * @see addRowFormatters
+     * @see addCellFormatters
+     * @see addCellFormatters
+     * @example
+     * ```typescript
+     * const data = DataFrame.from<string | number | Date>([
+     *     [dateTimeFor(1, 1), 12345, 'gnm-f234', 123.45, 4],
+     *     [dateTimeFor(2, 2), 23456, 'gnm-g234', 23.45, 5],
+     *     [dateTimeFor(3, 3), 34567, 'gnm-h234', 3.65, 40],
+     *     [dateTimeFor(4, 4), 45678, 'gnm-i234', 314.15, 9],
+     * ]).getOrThrow()
+     * const columnHeader = ['Date-Time', 'Customer ID', 'Product ID', 'Purchase Price', 'Amount']
+     * const rowHeader = [1, 2, 3, 4]
+     *
+     * const tableData = TableData.fromDataFrame<string | number | Date>(data)
+     *     .withColumnHeader(columnHeader)
+     *     .flatMap(td => td.withRowHeader(rowHeader))
+     *     .flatMap(tableData => TableFormatter.fromTableData(tableData)
+     *         // add the default formatter for the column header, at the highest priority so that
+     *         // it is the one that applies to the row representing the column header
+     *         .addRowFormatters([0], defaultFormatter, Infinity)
+     *         // add the default formatter for the row header, at the highest priority so that
+     *         // it is the one that applies to the column representing the row header
+     *         .flatMap(tf => tf.addColumnFormatters([0], defaultFormatter, Infinity))
+     *         // add the column formatters for each column at the default (lowest) priority
+     *         // (notice that the columns are shifted by one for the columns because the row-header
+     *         // occupies the first column (index=0))
+     *         .flatMap(tf => tf.addColumnFormatter(1, value => (value as Date).toLocaleDateString()))
+     *         .flatMap(tf => tf.addColumnFormatter(2, value => defaultFormatter(value)))
+     *         .flatMap(tf => tf.addColumnFormatter(4, value => `$ ${(value as number).toFixed(2)}`))
+     *         .flatMap(tf => tf.addColumnFormatter(5, value => `${(value as number).toFixed(0)}`))
+     *         // override the cell formatter for a select set of cells
+     *         .flatMap(tf => tf.addCellFormatter(1, 4, value => `${(value as number).toFixed(2)}`, 1000))
+     *         .flatMap(tf => tf.addCellFormatters([[3, 5], [4, 5]], value => `${((value as number) * 10).toFixed(0)}`, 1000))
+     *         // format the table data and get back a TableData<string>
+     *         .flatMap(tf => tf.formatTable())
+     *     )
+     *     .getOrThrow()
+     *
+     * const expectedData = DataFrame.from<string>([
+     *     ['2/1/2021', '12345', 'gnm-f234', '123.45', '4'], // overwrite (1, 4) to remove "$"
+     *     ['2/2/2021', '23456', 'gnm-g234', '$ 23.45', '5'],
+     *     ['2/3/2021', '34567', 'gnm-h234', '$ 3.65', '400'], // overwrite (3, 5) to multiply by 10
+     *     ['2/4/2021', '45678', 'gnm-i234', '$ 314.15', '90'], // overwrite (4, 5) to multiply by 10
+     * ]).getOrThrow()
+     * ```
+     */
     addCellFormatter(rowIndex: number, columnIndex: number, formatter: Formatter<V>, priority: number = 0): Result<TableFormatter<V>, string> {
         return this.dataFrame
             .tagCell(rowIndex, columnIndex, TableFormatterType.CELL, {formatter, priority})
             .map(data => new TableFormatter<V>(data))
     }
 
+    /**
+     * Adds formatters to specified cell indexes in a table formatter.
+     * @param cellIndexes An array of cell indexes to which the formatter will be applied.
+     * @param formatter The formatting function to apply to the specified cells.
+     * @param [priority = 0] The priority level for the formatter. Higher priority formatters are applied first.
+     * @return A result indicating the success or failure of adding the cell formatters.
+     * @see addColumnFormatter
+     * @see addRowFormatter
+     * @see addRowFormatters
+     * @see addCellFormatters
+     * @see addCellFormatters
+     * @example
+     * ```typescript
+     * const data = DataFrame.from<string | number | Date>([
+     *     [dateTimeFor(1, 1), 12345, 'gnm-f234', 123.45, 4],
+     *     [dateTimeFor(2, 2), 23456, 'gnm-g234', 23.45, 5],
+     *     [dateTimeFor(3, 3), 34567, 'gnm-h234', 3.65, 40],
+     *     [dateTimeFor(4, 4), 45678, 'gnm-i234', 314.15, 9],
+     * ]).getOrThrow()
+     * const columnHeader = ['Date-Time', 'Customer ID', 'Product ID', 'Purchase Price', 'Amount']
+     * const rowHeader = [1, 2, 3, 4]
+     *
+     * const tableData = TableData.fromDataFrame<string | number | Date>(data)
+     *     .withColumnHeader(columnHeader)
+     *     .flatMap(td => td.withRowHeader(rowHeader))
+     *     .flatMap(tableData => TableFormatter.fromTableData(tableData)
+     *         // add the default formatter for the column header, at the highest priority so that
+     *         // it is the one that applies to the row representing the column header
+     *         .addRowFormatters([0], defaultFormatter, Infinity)
+     *         // add the default formatter for the row header, at the highest priority so that
+     *         // it is the one that applies to the column representing the row header
+     *         .flatMap(tf => tf.addColumnFormatters([0], defaultFormatter, Infinity))
+     *         // add the column formatters for each column at the default (lowest) priority
+     *         // (notice that the columns are shifted by one for the columns because the row-header
+     *         // occupies the first column (index=0))
+     *         .flatMap(tf => tf.addColumnFormatter(1, value => (value as Date).toLocaleDateString()))
+     *         .flatMap(tf => tf.addColumnFormatter(2, value => defaultFormatter(value)))
+     *         .flatMap(tf => tf.addColumnFormatter(4, value => `$ ${(value as number).toFixed(2)}`))
+     *         .flatMap(tf => tf.addColumnFormatter(5, value => `${(value as number).toFixed(0)}`))
+     *         // override the cell formatter for a select set of cells
+     *         .flatMap(tf => tf.addCellFormatter(1, 4, value => `${(value as number).toFixed(2)}`, 1000))
+     *         .flatMap(tf => tf.addCellFormatters([[3, 5], [4, 5]], value => `${((value as number) * 10).toFixed(0)}`, 1000))
+     *         // format the table data and get back a TableData<string>
+     *         .flatMap(tf => tf.formatTable())
+     *     )
+     *     .getOrThrow()
+     *
+     * const expectedData = DataFrame.from<string>([
+     *     ['2/1/2021', '12345', 'gnm-f234', '123.45', '4'], // overwrite (1, 4) to remove "$"
+     *     ['2/2/2021', '23456', 'gnm-g234', '$ 23.45', '5'],
+     *     ['2/3/2021', '34567', 'gnm-h234', '$ 3.65', '400'], // overwrite (3, 5) to multiply by 10
+     *     ['2/4/2021', '45678', 'gnm-i234', '$ 314.15', '90'], // overwrite (4, 5) to multiply by 10
+     * ]).getOrThrow()
+     * ```
+     */
     addCellFormatters(cellIndexes: Array<[x: number, y: number]>, formatter: Formatter<V>, priority: number = 0): Result<TableFormatter<V>, string> {
-        return TableFormatter.addCellFormatters(this, cellIndexes, formatter, priority)
+        return TableFormatter.addCellFormatters(this, cellIndexes.slice(), formatter, priority)
     }
 
     private static addCellFormatters<V>(
@@ -196,7 +466,7 @@ export class TableFormatter<V> {
         priority: number = 0
     ): Result<TableFormatter<V>, string> {
         if (cellIndexes.length > 0) {
-            const [columnIndex, rowIndex] = cellIndexes.slice().shift() ?? [undefined, undefined]
+            const [rowIndex, columnIndex] = cellIndexes.shift() ?? [undefined, undefined]
             if (rowIndex != null && columnIndex != null) {
                 return tableFormatter
                     .addCellFormatter(rowIndex, columnIndex, formatter, priority)
@@ -277,9 +547,20 @@ export class TableFormatter<V> {
         return this.formatTableInto<C, TableData<string>>(dataFrame => TableData.fromDataFrame<string>(dataFrame))
     }
 
+    /**
+     * Generally, the {@link TableFormatter} formats the {@link DataFrame} into a `TableData<string>`
+     * where all the elements of the {@link TableData} are a string. Because a formatted table does
+     * not necessarily have to be a `TableData<string>` (which would contain a `DataFrame<string>`,
+     * this method allows mapping a {@link DataFrame} into any desired type.
+     * @param mapper A function that takes a `DataFrame<string>` and returns a desired type (`D`).
+     * @return A `Result<D, string>` where the `Result<D, string>` is either success, containing the
+     * desired type (`D`), or failure, containing an error message.
+     * @see formatTable
+     */
     formatTableInto<C extends TagCoordinate, D = TableData<string>>(mapper: (dataFrame: DataFrame<string>) => D): Result<D, string> {
         const formattingFailures: Array<string> = []
-        const formattedDataFrame = this.dataFrame
+        const formattedDataFrame = this
+            .dataFrame
             .mapElements<string>((elem, row, col) => {
                 const tags = this.dataFrame
                     .tagsFor(row, col)

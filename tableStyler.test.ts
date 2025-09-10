@@ -95,6 +95,23 @@ describe('styling data tables', () => {
             test('should be able to retrieve the margin', () => {
                 expect(styledTable.tableMargin()).toEqual({...defaultTableMargin, left: 10, right: 10})
             })
+
+            test('should be able to get a copy of the data-frame from the styler', () => {
+                const dataFrame = styledTable.data()
+                expect(dataFrame.equals(formattedTableData.unwrapDataFrame())).toBeTruthy()
+            })
+
+            test('should be able to report whether styled table has a row header', () => {
+                expect(styledTable.hasRowHeader()).toBeTruthy()
+            })
+
+            test('should be able to report whether styled table has a column header', () => {
+                expect(styledTable.hasColumnHeader()).toBeTruthy()
+            })
+
+            test('should be able to report whether styled table has a footer', () => {
+                expect(styledTable.hasFooter()).toBeTruthy()
+            })
         })
 
         test('should be able to set and retrieve style for the column header', () => {
@@ -343,7 +360,8 @@ describe('styling data tables', () => {
             }
 
             test('should be able to set the style for multiple columns at once', () => {
-                const styledTable: StyledTable<string> = TableStyler.fromTableData(formattedTableData)
+                // const styledTable: StyledTable<string> = TableStyler.fromTableData(formattedTableData)
+                const styledTable: StyledTable<string> = TableStyler.fromDataFrame(formattedTableData.unwrapDataFrame())
                     .withCellStyleWhen(
                         (value, row, column) => parseInt(value) >= 45678 && column === 2,
                         {padding: {...defaultTablePadding, left: 1000, right: 1111}},

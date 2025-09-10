@@ -67,10 +67,10 @@ describe('creating tables with mixed data types', () => {
             .flatMap(tableData => TableFormatter.fromTableData(tableData)
                 // add the default formatter for the column header, at the highest priority so that
                 // it is the one that applies to the row representing the column header
-                .addRowFormatter(0, defaultFormatter, Infinity)
+                .addRowFormatters([0], defaultFormatter, Infinity)
                 // add the default formatter for the row header, at the highest priority so that
                 // it is the one that applies to the column representing the row header
-                .flatMap(tf => tf.addColumnFormatter(0, defaultFormatter, Infinity))
+                .flatMap(tf => tf.addColumnFormatters([0], defaultFormatter, Infinity))
                 // add the column formatters for each column at the default (lowest) priority
                 // (notice that the columns are shifted by one for the columns because the row-header
                 // occupies the first column (index=0))
@@ -78,6 +78,50 @@ describe('creating tables with mixed data types', () => {
                 .flatMap(tf => tf.addColumnFormatter(2, value => defaultFormatter(value)))
                 .flatMap(tf => tf.addColumnFormatter(4, value => `$ ${(value as number).toFixed(2)}`))
                 .flatMap(tf => tf.addColumnFormatter(5, value => `${(value as number).toFixed(0)}`))
+                // format the table data and get back a TableData<string>
+                .flatMap(tf => tf.formatTable())
+            )
+            .getOrThrow()
+
+        expect(tableData.columnHeader().getOrThrow()).toEqual(columnHeader)
+        expect(tableData.rowHeader().getOrThrow()).toEqual(rowHeader.map(hdr => defaultFormatter(hdr)))
+        expect(tableData.data().map(df => df.equals(expectedData)).getOrThrow()).toBeTruthy()
+        expect(tableData.tableColumnCount()).toEqual(5 + 1) // data + row-header
+        expect(tableData.tableRowCount()).toEqual(4 + 1) // data + column-header
+        expect(tableData.hasColumnHeader()).toBeTruthy()
+        expect(tableData.hasRowHeader()).toBeTruthy()
+        expect(tableData.hasFooter()).toBeFalsy()
+    })
+
+    test('should be able to create a table with string column and row headers and numeric values', () => {
+
+        const expectedData = DataFrame.from<string>([
+            ['2/1/2021', '12345', 'gnm-f234', '123.45', '4'], // overwrite (1, 4) to remove $
+            ['2/2/2021', '23456', 'gnm-g234', '$ 23.45', '5'],
+            ['2/3/2021', '34567', 'gnm-h234', '$ 3.65', '400'], // overwrite (3, 5) to multiply by 10
+            ['2/4/2021', '45678', 'gnm-i234', '$ 314.15', '90'], // overwrite (4, 5) to multiply by 10
+        ]).getOrThrow()
+
+        const tableData = TableData.fromDataFrame<string | number | Date>(data)
+            .withColumnHeader(columnHeader)
+            .flatMap(td => td.withRowHeader(rowHeader))
+            .flatMap(tableData => TableFormatter.fromTableData(tableData)
+                // add the default formatter for the column header, at the highest priority so that
+                // it is the one that applies to the row representing the column header
+                .addRowFormatters([0], defaultFormatter, Infinity)
+                // add the default formatter for the row header, at the highest priority so that
+                // it is the one that applies to the column representing the row header
+                .flatMap(tf => tf.addColumnFormatters([0], defaultFormatter, Infinity))
+                // add the column formatters for each column at the default (lowest) priority
+                // (notice that the columns are shifted by one for the columns because the row-header
+                // occupies the first column (index=0))
+                .flatMap(tf => tf.addColumnFormatter(1, value => (value as Date).toLocaleDateString()))
+                .flatMap(tf => tf.addColumnFormatter(2, value => defaultFormatter(value)))
+                .flatMap(tf => tf.addColumnFormatter(4, value => `$ ${(value as number).toFixed(2)}`))
+                .flatMap(tf => tf.addColumnFormatter(5, value => `${(value as number).toFixed(0)}`))
+                // override the cell formatter for a select set of cells
+                .flatMap(tf => tf.addCellFormatter(1, 4, value => `${(value as number).toFixed(2)}`, 1000))
+                .flatMap(tf => tf.addCellFormatters([[3, 5], [4, 5]], value => `${((value as number) * 10).toFixed(0)}`, 1000))
                 // format the table data and get back a TableData<string>
                 .flatMap(tf => tf.formatTable())
             )

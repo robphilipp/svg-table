@@ -7,6 +7,7 @@ import {
     type CellStyle,
     type ColumnHeaderStyle,
     type ColumnStyle,
+    defaultBorder,
     defaultCellStyle,
     defaultColumnHeaderStyle,
     defaultColumnStyle,
@@ -20,6 +21,7 @@ import {
     defaultTablePadding,
     type Dimension,
     type FooterStyle,
+    Margin,
     type Padding,
     type RowHeaderStyle,
     type RowStyle,
@@ -28,7 +30,7 @@ import {
     type Stylings,
     type TableFont,
     type TableStylerProps,
-    TableStyleType, defaultBorder, Margin
+    TableStyleType
 } from "./stylings";
 
 /**
@@ -168,14 +170,26 @@ export class StyledTable<V> {
         return successResult(tags[0])
     }
 
+    /**
+     * Checks if the table has a row header.
+     * @returns `true` if the table has a row header, `false` otherwise
+     */
     hasRowHeader(): boolean {
         return TableData.hasRowHeader(this.dataFrame)
     }
 
+    /**
+     * Checks if the table has a column header.
+     * @returns `true` if the table has a row header, `false` otherwise
+     */
     hasColumnHeader(): boolean {
         return TableData.hasColumnHeader(this.dataFrame)
     }
 
+    /**
+     * Checks if the table has a footer header.
+     * @returns `true` if the table has a row header, `false` otherwise
+     */
     hasFooter(): boolean {
         return TableData.hasFooter(this.dataFrame)
     }
@@ -206,6 +220,10 @@ export class StyledTable<V> {
             .map(tag => tag.value as Styling<ColumnHeaderStyle>)
     }
 
+    /**
+     * Gets the style for the footer.
+     * @returns A Result containing the footer style if found, or an error message
+     */
     footerStyle(): Result<Styling<FooterStyle>, string> {
         if (!TableData.hasFooter(this.dataFrame)) {
             return failureResult("(StyledTable::footerStyle) The table data does not have a footer")
