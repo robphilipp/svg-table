@@ -7,6 +7,8 @@ A tiny TypeScript library to turn tabular data into a styled SVG table. It separ
 
 SVG Table is framework-agnostic and works with any environment where you can access an <svg> element (vanilla JS/TS, React, Svelte, etc.).
 
+> See [the SVG table example](https://github.com/robphilipp/svg-table-example) for an example of creating a table with SVG Table.
+
 ## Table of Contents
 - [Installation](#installation)
 - [Quick Start](#quick-start)
