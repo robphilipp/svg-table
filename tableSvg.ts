@@ -317,11 +317,14 @@ function createCellSelection(
     groupSelection: GroupSelection,
     style: CellStyle
 ): RectSelection {
-    return groupSelection
-        .append<SVGRectElement>("rect")
-        .attr('id', cellId(uniqueTableId, rowIndex, columnIndex))
-        .style('fill', style.background.color)
-        .style('fill-opacity', style.background.opacity)
+    if (style.background.opacity > 0) {
+        return groupSelection
+            .append<SVGRectElement>("rect")
+            .attr('id', cellId(uniqueTableId, rowIndex, columnIndex))
+            .style('fill', style.background.color)
+            .style('fill-opacity', style.background.opacity)
+     }
+    return {} as RectSelection
 }
 
 function createBorderSelection(
@@ -332,28 +335,28 @@ function createBorderSelection(
     style: CellStyle
 ): BorderSelection {
     let borderSelection: BorderSelection = {}
-    if (style.border.top) {
+    if (style.border.top.width > 0) {
         borderSelection.top = groupSelection
             .append<SVGLineElement>("line")
             .attr('id', borderId(uniqueTableId, BorderLocation.TOP, rowIndex, columnIndex))
             .style('stroke', style.border.top.color)
             .style('stroke-width', style.border.top.width)
     }
-    if (style.border.bottom) {
+    if (style.border.bottom.width > 0) {
         borderSelection.bottom = groupSelection
             .append<SVGLineElement>("line")
             .attr('id', borderId(uniqueTableId, BorderLocation.BOTTOM, rowIndex, columnIndex))
             .style('stroke', style.border.bottom.color)
             .style('stroke-width', style.border.bottom.width)
     }
-    if (style.border.left) {
+    if (style.border.left.width > 0) {
         borderSelection.left = groupSelection
             .append<SVGLineElement>("line")
             .attr('id', borderId(uniqueTableId, BorderLocation.LEFT, rowIndex, columnIndex))
             .style('stroke', style.border.left.color)
             .style('stroke-width', style.border.left.width)
     }
-    if (style.border.right) {
+    if (style.border.right.width > 0) {
         borderSelection.right = groupSelection
             .append<SVGLineElement>("line")
             .attr('id', borderId(uniqueTableId, BorderLocation.RIGHT, rowIndex, columnIndex))
@@ -776,10 +779,13 @@ function textYOffset(element: ElementPlacementInfo, cellHeight: number): number 
 function placeTextInTable(tableRenderingInfo: TableRenderingInfo): TableRenderingInfo {
     const updatedDf = tableRenderingInfo.renderingInfo.unwrapDataFrame()
         .mapElements(info => {
-            info.cellSelection
-                .attr('width', info.width)
-                .attr('height', info.height)
-                .attr('transform', `translate(${info.cellX}, ${info.cellY})`)
+            // empty selections won't have the 'attr' function, so don't try to call them
+            if (info.cellSelection.hasOwnProperty('attr')) {
+                info.cellSelection
+                    .attr('width', info.width)
+                    .attr('height', info.height)
+                    .attr('transform', `translate(${info.cellX}, ${info.cellY})`)
+            }
             info.textSelection
                 .attr('text-anchor', textAnchorFrom(info.cellStyle.alignText))
                 .attr('dominant-baseline', dominantBaselineFrom(info.cellStyle.verticalAlignText))
