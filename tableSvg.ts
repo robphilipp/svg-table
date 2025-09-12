@@ -780,7 +780,7 @@ function placeTextInTable(tableRenderingInfo: TableRenderingInfo): TableRenderin
     const updatedDf = tableRenderingInfo.renderingInfo.unwrapDataFrame()
         .mapElements(info => {
             // empty selections won't have the 'attr' function, so don't try to call them
-            if (info.cellSelection.hasOwnProperty('attr')) {
+            if (info.cellSelection.hasOwnProperty('_groups')) {
                 info.cellSelection
                     .attr('width', info.width)
                     .attr('height', info.height)
