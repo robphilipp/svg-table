@@ -515,8 +515,10 @@ function createDataPlacementInfo<V>(
 ): DataFrame<ElementPlacementInfo> {
     // when the table has a column header, then the data starts at row 1
     // otherwise, the data starts at row 0
-    const rowOffset = tableData.hasRowHeader() ? 1 : 0
-    const columnOffset = tableData.hasColumnHeader() ? 1 : 0
+    const rowOffset = tableData.hasColumnHeader() ? 1 : 0
+    const columnOffset = tableData.hasRowHeader() ? 1 : 0
+    // const rowOffset = tableData.hasRowHeader() ? 1 : 0
+    // const columnOffset = tableData.hasColumnHeader() ? 1 : 0
     return tableData
         .data()
         .map(df => {
