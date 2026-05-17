@@ -20,19 +20,21 @@ export function stylingFor<S>(style: Partial<S>, defaultStyle: S, priority: numb
     return {style: {...defaultStyle, ...style}, priority}
 }
 
-
 /**
  * Enum representing different types of table styling elements.
  * Used as identifiers when tagging different parts of the table with styles.
+ * Note: replaces enums to support `erasableSyntaxOnly`
+ *  TS1294: This syntax is not allowed when 'erasableSyntaxOnly' is enabled.
  */
-export enum TableStyleType {
-    COLUMN_HEADER = "column_header_style",
-    ROW_HEADER = "row_header_style",
-    FOOTER = "footer_style",
-    ROW = "row_style",
-    COLUMN = "column_style",
-    CELL = "cell_style"
-}
+export const TableStyleType = {
+    COLUMN_HEADER: "column_header_style",
+    ROW_HEADER: "row_header_style",
+    FOOTER: "footer_style",
+    ROW: "row_style",
+    COLUMN: "column_style",
+    CELL: "cell_style"
+} as const
+export type TableStyleType = typeof TableStyleType[keyof typeof TableStyleType]
 
 /**
  * Properties for the TableStyler class.
@@ -111,12 +113,18 @@ export type BorderElement = {
 }
 export const defaultBorderElement: BorderElement = {color: 'black', radius: 0, width: 0, opacity: 0}
 
-export enum BorderLocation {
-    TOP = 'top',
-    BOTTOM = 'bottom',
-    LEFT = 'left',
-    RIGHT = 'right'
-}
+/**
+ * The available border locations.
+ * Note: replaces enums to support `erasableSyntaxOnly`
+ *  TS1294: This syntax is not allowed when 'erasableSyntaxOnly' is enabled.
+ */
+export const BorderLocation = {
+    TOP: 'top',
+    BOTTOM: 'bottom',
+    LEFT: 'left',
+    RIGHT: 'right'
+} as const
+export type BorderLocation = typeof BorderLocation[keyof typeof BorderLocation]
 
 export type Border = {
     top: BorderElement

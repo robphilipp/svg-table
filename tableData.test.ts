@@ -202,13 +202,13 @@ describe('creating and manipulating table data', () => {
     test('should throw error when the data dimensions are inconsistent with the header dimensions', () => {
         let result = DataFrame.from([['a1'], ['a2']])
             .map(df => TableData.fromDataFrame<string>(df))
-            .flatMap(table => table.withColumnHeader(['a', 'b']))
+            .flatMap(table => table.withColumnHeader(['a', 'b']) as any)
         expect(result.failed).toBeTruthy()
         expect(result.error).toEqual("(DataFrame::insertRowBefore) The row must have the same number of elements as the data has columns. num_rows: 2; num_columns: 2")
 
         result = DataFrame.fromColumnData([['a1'], ['a2'], ['a3']])
             .map(df => TableData.fromDataFrame<string>(df))
-            .flatMap(table => table.withColumnHeader(['a', 'b']))
+            .flatMap(table => table.withColumnHeader(['a', 'b']) as any)
         expect(result.failed).toBeTruthy()
         expect(result.error).toEqual("(DataFrame::insertRowBefore) The row must have the same number of elements as the data has columns. num_rows: 1; num_columns: 2")
     })
@@ -216,13 +216,13 @@ describe('creating and manipulating table data', () => {
     test('should throw error when the rows do not all have the same number of columns', () => {
         let result = DataFrame.from([['a1', 'a2'], ['b2']])
             .map(df => TableData.fromDataFrame<string>(df))
-            .flatMap(table => table.withColumnHeader(['a', 'b']))
+            .flatMap(table => table.withColumnHeader(['a', 'b']) as any)
         expect(result.failed).toBeTruthy()
         expect(result.error).toEqual("(DataFrame.validateDimensions) All rows must have the same number of columns; min_num_columns: 1, maximum_columns: 2")
 
         result = DataFrame.fromColumnData([['a1'], ['a2', 'b2']])
             .map(df => TableData.fromDataFrame<string>(df))
-            .flatMap(table => table.withColumnHeader(['a', 'b']))
+            .flatMap(table => table.withColumnHeader(['a', 'b']) as any)
         expect(result.failed).toBeTruthy()
         expect(result.error).toEqual("(DataFrame.validateDimensions) All columns must have the same number of rows; min_num_rows: 1, maximum_rows: 2")
     })

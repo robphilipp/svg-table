@@ -1,5 +1,9 @@
 # change log
 
+## version 0.2.0
+
+Converted `enum` to erasable-compatible versions. This should be a no-op change for most users.
+
 ## version 0.1.2
 
 Performance optimizations: no longer add elements to the DOM that aren't needed. Specifically, when there is no background, the `rect` SVG element is not added. And when there is no border the `line` SVG elements are not added.
