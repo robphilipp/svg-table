@@ -363,7 +363,7 @@ describe('styling data tables', () => {
                 // const styledTable: StyledTable<string> = TableStyler.fromTableData(formattedTableData)
                 const styledTable: StyledTable<string> = TableStyler.fromDataFrame(formattedTableData.unwrapDataFrame())
                     .withCellStyleWhen(
-                        (value, row, column) => parseInt(value) >= 45678 && column === 2,
+                        (value, _row, column) => parseInt(value) >= 45678 && column === 2,
                         {padding: {...defaultTablePadding, left: 1000, right: 1111}},
                         75
                     )

@@ -334,7 +334,7 @@ function createBorderSelection(
     groupSelection: GroupSelection,
     style: CellStyle
 ): BorderSelection {
-    let borderSelection: BorderSelection = {}
+    const borderSelection: BorderSelection = {}
     if (style.border.top.width > 0) {
         borderSelection.top = groupSelection
             .append<SVGLineElement>("line")

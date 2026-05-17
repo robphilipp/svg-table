@@ -39,25 +39,40 @@ import {
  */
 export class StyledTable<V> {
 
+    private readonly dataFrame: DataFrame<V>
+    private readonly font: TableFont
+    private readonly border: Border
+    private readonly background: Background
+    private readonly dimension: Pick<Dimension, "width" | "height">
+    private readonly padding: Padding
+    private readonly margin: Margin
+
     /**
      * Creates a new StyledTable instance.
-     * @param dataFrame The data frame containing the table data
-     * @param font The font settings for the table
-     * @param border The border settings for the table
-     * @param background The background settings for the table
-     * @param dimension The dimension settings for the table
-     * @param padding The padding settings for the table
-     * @param margin The margin settings for the table
+     * @param dataFrame_ The data frame containing the table data
+     * @param font_ The font settings for the table
+     * @param border_ The border settings for the table
+     * @param background_ The background settings for the table
+     * @param dimension_ The dimension settings for the table
+     * @param padding_ The padding settings for the table
+     * @param margin_ The margin settings for the table
      */
     constructor(
-        private readonly dataFrame: DataFrame<V>,
-        private readonly font: TableFont,
-        private readonly border: Border,
-        private readonly background: Background,
-        private readonly dimension: Pick<Dimension, "width" | "height">,
-        private readonly padding: Padding,
-        private readonly margin: Margin,
+        dataFrame_: DataFrame<V>,
+        font_: TableFont,
+        border_: Border,
+        background_: Background,
+        dimension_: Pick<Dimension, "width" | "height">,
+        padding_: Padding,
+        margin_: Margin,
     ) {
+        this.dataFrame = dataFrame_
+        this.font = font_
+        this.border = border_
+        this.background = background_
+        this.dimension = dimension_
+        this.padding = padding_
+        this.margin = margin_
     }
 
     /**
@@ -425,28 +440,44 @@ export class StyledTable<V> {
  * Provides methods to configure various styling aspects of a table.
  */
 export class TableStyler<V> {
+    private readonly dataFrame: DataFrame<V>
+    private readonly font: TableFont = defaultTableFont
+    private readonly border: Border = defaultBorder
+    private readonly background: Background = defaultTableBackground
+    private readonly dimension: Pick<Dimension, "width" | "height"> = {width: NaN, height: NaN}
+    private readonly padding: Padding = defaultTablePadding
+    private readonly margin: Margin = defaultTableMargin
+    private readonly errors: Array<string> = []
 
     /**
      * Private constructor to enforce factory method usage.
-     * @param dataFrame The data frame containing the table data
-     * @param font The font settings for the table
-     * @param border The border settings for the table
-     * @param background The background settings for the table
-     * @param dimension The dimension settings for the table
-     * @param padding The padding settings for the table
-     * @param margin The margin settings for the table
-     * @param errors Array to collect error messages during styling operations
+     * @param dataFrame_ The data frame containing the table data
+     * @param font_ The font settings for the table
+     * @param border_ The border settings for the table
+     * @param background_ The background settings for the table
+     * @param dimension_ The dimension settings for the table
+     * @param padding_ The padding settings for the table
+     * @param margin_ The margin settings for the table
+     * @param errors_ Array to collect error messages during styling operations
      */
     private constructor(
-        private dataFrame: DataFrame<V>,
-        private font: TableFont = defaultTableFont,
-        private border: Border = defaultBorder,
-        private background: Background = defaultTableBackground,
-        private dimension: Pick<Dimension, "width" | "height"> = {width: NaN, height: NaN},
-        private padding: Padding = defaultTablePadding,
-        private margin: Margin = defaultTableMargin,
-        private readonly errors: Array<string> = []
+        dataFrame_: DataFrame<V>,
+        font_: TableFont = defaultTableFont,
+        border_: Border = defaultBorder,
+        background_: Background = defaultTableBackground,
+        dimension_: Pick<Dimension, "width" | "height"> = {width: NaN, height: NaN},
+        padding_: Padding = defaultTablePadding,
+        margin_: Margin = defaultTableMargin,
+        errors_: Array<string> = []
     ) {
+        this.dataFrame = dataFrame_
+        this.font = font_
+        this.border = border_
+        this.background = background_
+        this.dimension = dimension_
+        this.padding = padding_
+        this.margin = margin_
+        this.errors = errors_
     }
 
     /**
@@ -520,9 +551,7 @@ export class TableStyler<V> {
      * @return A new {@link TableStyler} instance with the updated font settings.
      */
     withTableFont(font: Partial<TableFont>): TableStyler<V> {
-        const builder = this.copy()
-        builder.font = {...defaultTableFont, ...font}
-        return builder
+        return this.update({font: {...defaultTableFont, ...font}})
     }
 
     /**
@@ -531,9 +560,7 @@ export class TableStyler<V> {
      * @returns A new TableStyler instance with the updated background
      */
     withTableBackground(background: Partial<Background>): TableStyler<V> {
-        const builder = this.copy()
-        builder.background = {...builder.background, ...background}
-        return builder
+        return this.update({background: {...this.background, ...background}})
     }
 
     /**
@@ -542,9 +569,7 @@ export class TableStyler<V> {
      * @returns A new TableStyler instance with the updated border
      */
     withBorder(border: Partial<Border>): TableStyler<V> {
-        const builder = this.copy()
-        builder.border = {...builder.border, ...border}
-        return builder
+        return this.update({border: {...this.border, ...border}})
     }
 
     /**
@@ -554,9 +579,7 @@ export class TableStyler<V> {
      * @returns A new TableStyler instance with the updated dimensions
      */
     withDimensions(width: number, height: number): TableStyler<V> {
-        const builder = this.copy()
-        builder.dimension = {width, height}
-        return builder
+        return this.update({dimension: {width, height}})
     }
 
     /**
@@ -565,9 +588,7 @@ export class TableStyler<V> {
      * @returns A new TableStyler instance with the updated padding
      */
     withPadding(padding: Partial<Padding>): TableStyler<V> {
-        const builder = this.copy()
-        builder.padding = {...builder.padding, ...padding}
-        return builder
+        return this.update({padding: {...this.padding, ...padding}})
     }
 
     /**
@@ -576,9 +597,7 @@ export class TableStyler<V> {
      * @returns A new TableStyler instance with the updated margin
      */
     withMargin(margin: Partial<Margin>): TableStyler<V> {
-        const builder = this.copy()
-        builder.margin = {...builder.margin, ...margin}
-        return builder
+        return this.update({margin: {...this.margin, ...margin}})
     }
 
     /**
@@ -617,7 +636,7 @@ export class TableStyler<V> {
      * Sets the style for the column header row.
      * @param columnHeaderStyle The style to apply to the column header. Style properties that are not specified
      * will be set to their default values.
-     * @param priority The priority of this style (higher values take precedence)
+     * @param [priority=Infinity] The priority of this style (higher values take precedence)
      * @returns A new TableStyler instance with the column header style applied
      */
     withColumnHeaderStyle(
