@@ -1,5 +1,9 @@
 # change log
 
+## version 0.2.1
+
+Updated dependencies (result-fn).
+
 ## version 0.2.0
 
 Converted `enum` to erasable-compatible versions. This should be a no-op change for most users.
