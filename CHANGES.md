@@ -1,5 +1,9 @@
 # change log
 
+## version 0.2.2
+
+Removed dependencies (d3, data-frame-ts, results-fn), placing them in `devDependencies` to avoid version conflicts.
+
 ## version 0.2.1
 
 Updated dependencies (result-fn).
